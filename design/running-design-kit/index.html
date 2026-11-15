@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#080d12">
+<title>Running Design System — компоненты</title>
+<link rel="stylesheet" href="theme.css">
+<style>
+  /* только для демонстрации: переключатель темы и подписи секций */
+  .demo-switch {
+    position: sticky; top: 0; z-index: 30;
+    display: flex; gap: 6px; justify-content: center; flex-wrap: wrap;
+    padding: 10px 12px calc(10px + env(safe-area-inset-top));
+    background: rgba(8, 13, 18, .92);
+    -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px);
+    border-bottom: 1px solid rgba(255,255,255,.06);
+  }
+  .demo-note {
+    margin: 0 0 10px; color: #6f7d84; font-size: 10px; line-height: 1.5;
+    letter-spacing: .04em; text-transform: uppercase; font-weight: 650;
+  }
+</style>
+</head>
+<body>
+<div class="demo-switch">
+  <button class="chip is-active" data-theme-btn="teal" aria-pressed="true">Mint</button>
+  <button class="chip" data-theme-btn="violet" aria-pressed="false">Violet</button>
+  <button class="chip" data-theme-btn="amber" aria-pressed="false">Amber</button>
+</div>
+
+<div class="app-shell" id="shell">
+  <div class="ambient ambient-one"></div>
+  <div class="ambient ambient-two"></div>
+
+  <!-- ================= ШАПКА ================= -->
+  <header class="app-header">
+    <a class="brand" href="#" aria-label="На главную">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 38 38" width="38" height="38" fill="none">
+          <rect width="38" height="38" rx="11" fill="rgba(115,227,207,.12)"/>
+          <path d="M11 25c3.2-.6 5.4-2 6.8-4.4l2-3.6c.8-1.4 2.6-1.8 3.7-.7l3.4 3.3c.7.7 1.6 1.2 2.6 1.4l1.9.4c1.5.3 2.4 1.7 2 3.2-.3 1.2-1.4 2-2.6 2H13.2c-1.2 0-1.9-.7-2.2-1.6Z" fill="#73e3cf"/>
+        </svg>
+      </span>
+      <span class="brand-copy">
+        <strong>Running</strong>
+        <small>DESIGN SYSTEM · v1.0</small>
+      </span>
+    </a>
+    <div class="header-actions">
+      <button class="header-icon" type="button" aria-label="Меню" id="openMenu">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- всплывающее меню -->
+  <div class="app-menu" id="appMenu" hidden>
+    <button class="app-menu-item is-current" type="button">
+      <span aria-hidden="true">◎</span>
+      <span><strong>Экраны</strong><small>Основные разделы</small></span>
+    </button>
+    <button class="app-menu-item" type="button">
+      <span aria-hidden="true">◇</span>
+      <span><strong>Настройки</strong><small>Профиль и тема</small></span>
+    </button>
+  </div>
+
+  <main class="screen">
+    <p class="demo-note">Hero · главный блок</p>
+
+    <section class="card card-hero">
+      <div class="section-heading" style="margin:0 0 12px">
+        <h2>Сегодня</h2><span>ср, 4 ноября</span>
+      </div>
+      <div class="stat-value" style="font-size:38px">12,4 <small>км</small></div>
+      <div style="margin:14px 0 8px" class="bar-track"><b class="bar-fill" style="width:74%"></b></div>
+      <p class="muted" style="margin:0;font-size:11px">74% дневной цели · осталось 4,3 км</p>
+      <div class="row" style="margin-top:16px">
+        <button class="primary-button" type="button" style="min-height:46px">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+          Добавить
+        </button>
+        <button class="ghost-button" type="button" style="min-height:46px">Отмена</button>
+      </div>
+    </section>
+
+    <p class="demo-note" style="margin-top:20px">Stat cards · метрики</p>
+    <section class="stat-grid three">
+      <div class="stat-card">
+        <div class="stat-value">8,1<small>км</small></div>
+        <div class="stat-label">Дистанция</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">42<small>мин</small></div>
+        <div class="stat-label">Время</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">5:12<small>/км</small></div>
+        <div class="stat-label">Темп</div>
+      </div>
+    </section>
+
+    <p class="demo-note" style="margin-top:20px">Day bars · активность по дням</p>
+    <section class="card">
+      <div class="day-bars">
+        <div class="day-column"><div class="day-bar-track"><b class="day-bar-fill" style="height:34%"></b></div><span class="day-label">Пн</span></div>
+        <div class="day-column"><div class="day-bar-track"><b class="day-bar-fill" style="height:62%"></b></div><span class="day-label">Вт</span></div>
+        <div class="day-column"><div class="day-bar-track"><b class="day-bar-fill" style="height:20%"></b></div><span class="day-label">Ср</span></div>
+        <div class="day-column"><div class="day-bar-track"><b class="day-bar-fill" style="height:88%"></b></div><span class="day-label">Чт</span></div>
+        <div class="day-column"><div class="day-bar-track"><b class="day-bar-fill" style="height:46%"></b></div><span class="day-label">Пт</span></div>
+        <div class="day-column"><div class="day-bar-track"><b class="day-bar-fill" style="height:70%"></b></div><span class="day-label">Сб</span></div>
+        <div class="day-column"><div class="day-bar-track"><b class="day-bar-fill" style="height:15%"></b></div><span class="day-label">Вс</span></div>
+      </div>
+    </section>
+
+    <p class="demo-note" style="margin-top:20px">List · список записей</p>
+    <section class="card" style="padding:4px 14px">
+      <div class="list">
+        <div class="list-row">
+          <div class="list-row-main"><strong>Утренняя пробежка</strong><span>5,2 км · 27 мин · 5:11 /км</span></div>
+          <div class="list-row-value">+5,2</div>
+        </div>
+        <div class="list-row">
+          <div class="list-row-main"><strong>Интервалы</strong><span>3,1 км · 18 мин · 5:48 /км</span></div>
+          <div class="list-row-value">+3,1</div>
+        </div>
+        <div class="list-row">
+          <div class="list-row-main"><strong>Вечерняя ходьба</strong><span>2,0 км · 22 мин</span></div>
+          <div class="list-row-value">+2,0</div>
+        </div>
+      </div>
+    </section>
+
+    <p class="demo-note" style="margin-top:20px">Empty state · пустой экран</p>
+    <section class="card">
+      <div class="empty"><strong>Пока пусто</strong>Добавьте первую запись — она появится здесь и попадёт в статистику.</div>
+    </section>
+
+    <p class="demo-note" style="margin-top:20px">Controls · переключатели и поля</p>
+    <section class="card stack">
+      <div class="segmented">
+        <button type="button" aria-pressed="true">День</button>
+        <button type="button" aria-pressed="false">Неделя</button>
+        <button type="button" aria-pressed="false">Всё время</button>
+      </div>
+      <div class="row" style="flex-wrap:wrap">
+        <button class="chip is-active" type="button">Все</button>
+        <button class="chip" type="button">Бег</button>
+        <button class="chip" type="button">Ходьба</button>
+      </div>
+      <div class="field">
+        <label for="demoInput">Дистанция</label>
+        <div class="input-wrap">
+          <input class="input" id="demoInput" inputmode="decimal" placeholder="0,0">
+          <span class="input-suffix">км</span>
+        </div>
+      </div>
+      <button class="primary-button" type="button" id="showToast">Показать тост</button>
+      <button class="ghost-button" type="button" id="openSheet">Открыть шторку</button>
+    </section>
+
+    <p class="demo-note" style="margin-top:20px">Sheet · нижняя шторка</p>
+    <section class="card">
+      <p class="muted" style="margin:0;font-size:11px;line-height:1.6">
+        Компонент <code>.sheet</code> + <code>.sheet-backdrop</code> — выезжает снизу с пружинной анимацией.
+        Используется для форм и подтверждений.
+      </p>
+    </section>
+
+    <div style="height:40px"></div>
+  </main>
+
+  <!-- ================= НИЖНЕЕ МЕНЮ ================= -->
+  <nav class="bottom-nav">
+    <button class="nav-item" type="button" aria-current="page">
+      <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M4 11.5 12 4l8 7.5M6.5 10v9h11v-9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      Главная
+    </button>
+    <button class="nav-item" type="button">
+      <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M5 19V9m7 10V5m7 14v-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span>
+      Статистика
+    </button>
+    <button class="nav-item" type="button">
+      <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8.5" r="3.4" stroke="currentColor" stroke-width="1.7"/><path d="M5.5 19c.8-3.4 3.4-5.2 6.5-5.2s5.7 1.8 6.5 5.2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span>
+      Профиль
+    </button>
+  </nav>
+</div>
+
+<div class="sheet-backdrop" id="sheetBackdrop"></div>
+<aside class="sheet" id="sheet" aria-hidden="true">
+  <div class="sheet-handle"></div>
+  <h3>Добавить запись</h3>
+  <p>Форма в шторке — так в Running оформлены ввод дистанции, цели и подтверждения.</p>
+  <div class="stack">
+    <div class="field">
+      <label for="sheetInput">Дистанция</label>
+      <div class="input-wrap">
+        <input class="input" id="sheetInput" inputmode="decimal" placeholder="0,0">
+        <span class="input-suffix">км</span>
+      </div>
+    </div>
+    <button class="primary-button" type="button" id="closeSheet">Сохранить</button>
+    <button class="ghost-button" type="button" id="closeSheet2">Закрыть</button>
+  </div>
+</aside>
+
+<div class="toast" id="toast" role="status" aria-live="polite">Готово — запись сохранена</div>
+
+<script>
+  // переключение акцента
+  const shell = document.getElementById('shell');
+  document.querySelectorAll('[data-theme-btn]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const theme = btn.dataset.themeBtn;
+      if (theme === 'teal') shell.removeAttribute('data-theme');
+      else shell.dataset.theme = theme;
+      document.querySelectorAll('[data-theme-btn]').forEach((b) => {
+        const on = b === btn;
+        b.classList.toggle('is-active', on);
+        b.setAttribute('aria-pressed', String(on));
+      });
+    });
+  });
+
+  // меню
+  const menu = document.getElementById('appMenu');
+  document.getElementById('openMenu').addEventListener('click', () => {
+    menu.hidden = !menu.hidden;
+  });
+
+  // тост
+  const toast = document.getElementById('toast');
+  let toastTimer;
+  document.getElementById('showToast').addEventListener('click', () => {
+    toast.classList.add('is-visible');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('is-visible'), 2200);
+  });
+
+  // шторка
+  const sheet = document.getElementById('sheet');
+  const backdrop = document.getElementById('sheetBackdrop');
+  const setSheet = (open) => {
+    sheet.classList.toggle('is-open', open);
+    backdrop.classList.toggle('is-open', open);
+    sheet.setAttribute('aria-hidden', String(!open));
+  };
+  document.getElementById('openSheet').addEventListener('click', () => setSheet(true));
+  document.getElementById('closeSheet').addEventListener('click', () => { setSheet(false); toast.classList.add('is-visible'); toastTimer = setTimeout(() => toast.classList.remove('is-visible'), 2200); });
+  document.getElementById('closeSheet2').addEventListener('click', () => setSheet(false));
+  backdrop.addEventListener('click', () => setSheet(false));
+
+  // сегменты
+  document.querySelectorAll('.segmented button').forEach((b) => {
+    b.addEventListener('click', () => {
+      b.parentElement.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    });
+  });
+
+  // чипы
+  document.querySelectorAll('.chip[type="button"]').forEach((c) => {
+    c.addEventListener('click', () => c.classList.toggle('is-active'));
+  });
+</script>
+</body>
+</html>

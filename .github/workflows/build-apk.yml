@@ -1,0 +1,208 @@
+name: Build APK
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle 8.7
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.7
+
+      - name: Build APKs
+        run: |
+          set -o pipefail
+          gradle assembleDebug assembleRelease --stacktrace 2>&1 | tee /tmp/build.log
+
+      - name: Report build failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          {
+            echo 'Ошибки сборки:'
+            echo '```'
+            grep -iE "^e: |error:|FAILED|What went wrong|Caused by|Execution failed|Unresolved reference" /tmp/build.log | head -60 | cut -c1-500
+            echo '```'
+          } > /tmp/report.md
+          head -c 60000 /tmp/report.md > /tmp/report_trim.md
+          gh api "repos/${{ github.repository }}/commits/${{ github.sha }}/comments" \
+            -f body="$(cat /tmp/report_trim.md)" || true
+
+      - name: Publish release APK
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          DEBUG_APK=$(ls app/build/outputs/apk/debug/*.apk | head -n 1)
+          RELEASE_APK=$(ls app/build/outputs/apk/release/*.apk | head -n 1)
+          cp "$DEBUG_APK" sterzhen.apk
+          cp "$RELEASE_APK" sterzhen-release.apk
+          NOTES="Сборка из коммита ${GITHUB_SHA:0:7} ($(date -u '+%d.%m.%Y %H:%M UTC'))."
+          if gh release view latest >/dev/null 2>&1; then
+            gh release upload latest sterzhen.apk sterzhen-release.apk --clobber
+            gh release edit latest --notes "$NOTES"
+          else
+            gh release create latest --target "$GITHUB_SHA" \
+              --title "Стержень — последняя сборка" \
+              --notes "$NOTES" \
+              sterzhen.apk sterzhen-release.apk
+          fi
+
+      - name: Publish APK into repo (for preview delivery)
+        if: github.event_name == 'push'
+        continue-on-error: true
+        run: |
+          set -e
+          if echo "${{ github.event.head_commit.message }}" | grep -q "\[skip ci\]"; then
+            echo "skip ci commit, not publishing"
+            exit 0
+          fi
+          mkdir -p dist
+          cp sterzhen-release.apk dist/sterzhen.apk
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f dist/sterzhen.apk
+          git commit -m "dist: apk ${GITHUB_SHA:0:7} [skip ci]" || exit 0
+          git push
+
+      - name: Publish to Supabase Storage
+        if: github.event_name == 'push'
+        continue-on-error: true
+        run: |
+          SB="https://rayrtftzmcfphvlrtpkf.supabase.co"
+          KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJheXJ0ZnR6bWNmcGh2bHJ0cGtmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI5MDUzNzMsImV4cCI6MjEwODQ4MTM3M30.2PnvcwFrmXVh-f1wsu1n9xxn0zqVZZqWuXwaKXY7--A"
+          CODE=$(curl -sS -o /tmp/sb.json -w '%{http_code}' -X POST \
+            "$SB/storage/v1/object/apk/sterzhen.apk" \
+            -H "apikey: $KEY" -H "Authorization: Bearer $KEY" \
+            -H "Content-Type: application/vnd.android.package-archive" \
+            -H "x-upsert: true" \
+            --data-binary @sterzhen-release.apk || true)
+          echo "supabase upload http=$CODE $(head -c 200 /tmp/sb.json)"
+          PUBLIC="$SB/storage/v1/object/public/apk/sterzhen.apk"
+          echo "Supabase link: $PUBLIC"
+          { echo; echo "Supabase (постоянная ссылка): $PUBLIC"; } >> /tmp/extra.md || true
+
+      - name: Publish mirrors
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          APK=sterzhen-release.apk
+          echo "== gofile (реальная загрузка) =="
+          GF=""
+          GF_SERVER=$(curl -sS -m 60 https://api.gofile.io/servers \
+            | sed -n 's/.*"name":"\([^"]*\)".*/\1/p' | head -1)
+          echo "gofile server: $GF_SERVER"
+          if [ -n "$GF_SERVER" ]; then
+            GF_JSON=$(curl -sS -m 600 -F "file=@$APK" \
+              "https://$GF_SERVER.gofile.io/contents/uploadfile" || true)
+            echo "GOFILE_JSON=$(echo "$GF_JSON" | head -c 400)"
+            GF=$(echo "$GF_JSON" | sed -n 's/.*"downloadPage":"\([^"]*\)".*/\1/p')
+          fi
+          if [ -z "$GF" ]; then
+            echo "новая ручка не отдала ссылку — пробуем legacy"
+            LEG_SERVER=$(curl -sS -m 60 https://api.gofile.io/getServer \
+              | sed -n 's/.*"server":"\([^"]*\)".*/\1/p')
+            if [ -n "$LEG_SERVER" ]; then
+              GF_JSON=$(curl -sS -m 600 -F "file=@$APK" \
+                "https://$LEG_SERVER.gofile.io/uploadFile" || true)
+              echo "GOFILE_LEGACY=$(echo "$GF_JSON" | head -c 400)"
+              GF=$(echo "$GF_JSON" | sed -n 's/.*"downloadPage":"\([^"]*\)".*/\1/p')
+            fi
+          fi
+          echo "GOFILE=$GF"
+          echo "== pixeldrain =="
+          PD=$(curl -sS -m 300 -T "$APK" https://pixeldrain.com/api/file/ || true)
+          echo "PIXELDRAIN=$PD"
+          PD_ID=$(echo "$PD" | sed -n 's/.*"id":"\([^"]*\)".*/\1/p')
+          echo "== filebin =="
+          BIN="sterzhen-${{ github.run_number }}"
+          curl -sS -m 300 -X POST -H "filename: sterzhen-release.apk" \
+            --data-binary "@$APK" "https://filebin.net/$BIN" > /tmp/filebin.json || true
+          echo "FILEBIN code: $(head -c 200 /tmp/filebin.json)"
+          echo "== uguu =="
+          UG=$(curl -sS -m 300 -F "files[]=@$APK" "https://uguu.se/upload?output=text" || true)
+          echo "UGUU=$UG"
+          echo "== transfer.sh =="
+          TS=$(curl -sS -m 300 --upload-file "$APK" "https://transfer.sh/sterzhen.apk" || true)
+          echo "TRANSFER=$TS"
+          echo "== envs.sh (живёт ~месяц) =="
+          ENVS=$(curl -sS -m 300 -A "Mozilla/5.0" -F "file=@$APK" https://envs.sh || true)
+          echo "ENVS=$ENVS"
+          echo "== oshi.at (168ч) =="
+          OSHI_RAW=$(curl -sS -m 300 -A "Mozilla/5.0" -F "f=@$APK" "https://oshi.at/?expire=168" || true)
+          echo "OSHI=$(echo "$OSHI_RAW" | head -c 300)"
+          OSHI=$(echo "$OSHI_RAW" | sed -n 's/^DL: \(.*\)$/\1/p' | head -1)
+          echo "== catbox =="
+          CAT=$(curl -sS -m 300 -A "Mozilla/5.0" -F "reqtype=fileupload" \
+            -F "fileToUpload=@$APK" https://catbox.moe/user/api.php || true)
+          echo "CATBOX=$CAT"
+          echo "== tmpfiles.org =="
+          TF_JSON=$(curl -sS -m 300 -A "Mozilla/5.0" -F "file=@$APK" https://tmpfiles.org/api/v1/upload || true)
+          echo "TMPFILES=$(echo "$TF_JSON" | head -c 300)"
+          TF=$(echo "$TF_JSON" | sed -n 's/.*"url":"\([^"]*\)".*/\1/p' | sed 's#https://tmpfiles.org/#https://tmpfiles.org/dl/#')
+          echo "== litterbox (72ч) =="
+          LB=$(curl -sS -m 300 -A "Mozilla/5.0" -F "reqtype=fileupload" -F "time=72h" \
+            -F "fileToUpload=@$APK" https://litterbox.catbox.moe/resources/internals/api.php || true)
+          echo "LITTERBOX=$LB"
+          echo "== temp.sh =="
+          TM=$(curl -sS -m 300 --upload-file "$APK" "https://temp.sh/sterzhen.apk" || true)
+          echo "TEMPSH=$TM"
+
+          check() {
+            curl -sIL -m 60 "$1" 2>/dev/null | grep -iE "^(HTTP/|content-length)" | tr -d '\r' | tr '\n' ' '
+          }
+
+          {
+            echo "Зеркала APK (сборка ${GITHUB_SHA:0:7}):"
+            echo
+            if [ -n "$GF" ]; then echo "gofile (свежий): $GF"; else echo "gofile: загрузка не удалась"; fi
+            if [ -n "$ENVS" ]; then echo "envs.sh (живёт долго): $ENVS"; fi
+            if [ -n "$OSHI" ]; then echo "oshi.at (7 дней): $OSHI"; fi
+            if printf '%s' "$CAT" | grep -q '^https://'; then echo "catbox: $CAT"; fi
+            if [ -n "$TF" ]; then echo "tmpfiles (1 час): $TF"; fi
+            if [ -n "$LB" ]; then echo "litterbox: $LB"; fi
+            if [ -n "$PD_ID" ]; then echo "pixeldrain: https://pixeldrain.com/api/file/$PD_ID?download"; fi
+            echo "filebin: https://filebin.net/$BIN/sterzhen-release.apk"
+            if [ -n "$UG" ]; then echo "uguu: $UG"; fi
+            if [ -n "$TS" ]; then echo "transfer: $TS"; fi
+            if [ -n "$TM" ]; then echo "temp.sh: $TM"; fi
+            echo
+            echo "Проверка ссылок:"
+            if [ -n "$GF" ]; then echo "gofile  -> $(check "$GF")"; fi
+            if [ -n "$ENVS" ]; then echo "envs.sh -> $(check "$ENVS")"; fi
+            if [ -n "$OSHI" ]; then echo "oshi.at -> $(check "$OSHI")"; fi
+            if [ -n "$TF" ]; then echo "tmpfiles -> $(check "$TF")"; fi
+            echo "filebin -> $(check "https://filebin.net/$BIN/sterzhen-release.apk")"
+          } > /tmp/mirrors.md
+          head -c 60000 /tmp/mirrors.md > /tmp/mirrors_trim.md
+          cat /tmp/mirrors_trim.md
+          gh api "repos/${{ github.repository }}/commits/${{ github.sha }}/comments" \
+            -f body="$(cat /tmp/mirrors_trim.md)" || true
+
+      - name: Upload APKs
+        uses: actions/upload-artifact@v4
+        with:
+          name: sterzhen-apk
+          path: |
+            app/build/outputs/apk/debug/*.apk
+            app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
