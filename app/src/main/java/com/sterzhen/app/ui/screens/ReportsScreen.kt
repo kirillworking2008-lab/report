@@ -32,11 +32,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sterzhen.app.data.DateUtils
 import com.sterzhen.app.ui.AppViewModel
+import com.sterzhen.app.ui.dayShortName
 import com.sterzhen.app.ui.PrincipleState
 import com.sterzhen.app.ui.components.DaysDots
 import com.sterzhen.app.ui.components.FireStreak
 import java.time.format.DateTimeFormatter
-import java.time.format.FormatStyle
 import java.util.Locale
 
 @Composable
@@ -129,7 +129,7 @@ fun ReportsScreen(vm: AppViewModel) {
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = day.dayOfWeek.getDisplayName(FormatStyle.SHORT, ruLocale),
+                                text = dayShortName(day.dayOfWeek),
                                 fontSize = 11.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )

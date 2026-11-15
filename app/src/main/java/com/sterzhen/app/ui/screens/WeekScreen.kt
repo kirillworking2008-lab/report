@@ -41,10 +41,10 @@ import androidx.compose.ui.unit.sp
 import com.sterzhen.app.data.DateUtils
 import com.sterzhen.app.data.db.TaskEntity
 import com.sterzhen.app.ui.AppViewModel
+import com.sterzhen.app.ui.dayShortName
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-import java.time.format.FormatStyle
 import java.time.temporal.TemporalAdjusters
 import java.util.Locale
 
@@ -151,7 +151,7 @@ fun WeekScreen(vm: AppViewModel) {
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
-                                text = day.dayOfWeek.getDisplayName(FormatStyle.SHORT, ruLocale),
+                                text = dayShortName(day.dayOfWeek),
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface
