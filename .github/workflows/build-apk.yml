@@ -4,6 +4,9 @@ on:
   push:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-24.04
@@ -23,7 +26,24 @@ jobs:
           gradle-version: 8.7
 
       - name: Build APKs
-        run: gradle assembleDebug assembleRelease --stacktrace
+        run: |
+          set -o pipefail
+          gradle assembleDebug assembleRelease --stacktrace 2>&1 | tee /tmp/build.log
+
+      - name: Report build failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          {
+            echo 'Ошибки сборки:'
+            echo '```'
+            grep -iE "^e: |error:|FAILED|What went wrong|Caused by|Execution failed|Unresolved reference" /tmp/build.log | head -60 | cut -c1-500
+            echo '```'
+          } > /tmp/report.md
+          head -c 60000 /tmp/report.md > /tmp/report_trim.md
+          gh api "repos/${{ github.repository }}/commits/${{ github.sha }}/comments" \
+            -f body="$(cat /tmp/report_trim.md)" || true
 
       - name: Upload APKs
         uses: actions/upload-artifact@v4
