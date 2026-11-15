@@ -1,16 +1,25 @@
 package com.sterzhen.app.ui.screens
 
+import androidx.compose.animation.core.animate
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -19,27 +28,37 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import com.sterzhen.app.data.DateUtils
+import com.sterzhen.app.data.Principle
+import com.sterzhen.app.data.Principles
 import com.sterzhen.app.data.db.TaskEntity
 import com.sterzhen.app.ui.AppViewModel
 import com.sterzhen.app.ui.PrincipleState
@@ -48,17 +67,34 @@ import com.sterzhen.app.ui.components.BigStreak
 import com.sterzhen.app.ui.components.DayStrip
 import com.sterzhen.app.ui.components.FlameBurst
 import com.sterzhen.app.ui.components.GlassCard
-import com.sterzhen.app.ui.components.GlowButton
+import com.sterzhen.app.ui.components.MilestoneBar
 import com.sterzhen.app.ui.components.OutlineButton
 import com.sterzhen.app.ui.components.Pill
 import com.sterzhen.app.ui.components.SectionHeader
 import com.sterzhen.app.ui.components.StartDateDialog
 import com.sterzhen.app.ui.components.StreakRing
 import com.sterzhen.app.ui.theme.Ink
-import java.time.LocalDate
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.time.format.DateTimeFormatter
+import kotlin.math.PI
+import kotlin.math.abs
+import kotlin.math.cos
+import kotlin.math.roundToInt
+import kotlin.math.sin
 
-@OptIn(ExperimentalMaterial3Api::class)
+private fun fallbackState(p: Principle) = PrincipleState(
+    principle = p,
+    currentStreak = 0,
+    bestStreak = 0,
+    slippedToday = false,
+    tracked = false,
+    lastDays = List(14) { null }
+)
+
+/**
+ * «Сегодня»: стержень (3D-карусель принципов + детали активного) и задачи дня.
+ */
 @Composable
 fun TodayScreen(vm: AppViewModel) {
     val today by vm.today.collectAsState()
@@ -67,8 +103,53 @@ fun TodayScreen(vm: AppViewModel) {
     val heldCount by vm.heldTodayCount.collectAsState()
 
     var newTask by remember { mutableStateOf("") }
-    var sheetState by remember { mutableStateOf<PrincipleState?>(null) }
-    var pickerFor by remember { mutableStateOf<PrincipleState?>(null) }
+    var showStartPicker by remember { mutableStateOf(false) }
+
+    var angle by remember { mutableFloatStateOf(0f) }
+    var dragging by remember { mutableStateOf(false) }
+    var animating by remember { mutableStateOf(false) }
+    var autoRotate by remember { mutableStateOf(true) }
+    val scope = rememberCoroutineScope()
+
+    val count = Principles.ALL.size
+    val step = 360f / count
+
+    fun settleTo(target: Float) {
+        scope.launch {
+            animating = true
+            animate(
+                initialValue = angle,
+                targetValue = target,
+                animationSpec = spring(dampingRatio = 0.82f, stiffness = 260f)
+            ) { value, _ -> angle = value }
+            animating = false
+        }
+    }
+
+    val frontIndex by remember {
+        derivedStateOf {
+            Principles.ALL.indices.minByOrNull { i ->
+                val raw = (angle + i * step) % 360f
+                abs(((raw + 540f) % 360f) - 180f)
+            } ?: 0
+        }
+    }
+
+    LaunchedEffect(autoRotate, dragging, animating) {
+        if (autoRotate && !dragging && !animating) {
+            while (true) {
+                delay(16)
+                angle += 0.14f
+            }
+        }
+    }
+
+    val stopAuto = { autoRotate = false }
+    val stateById = states.associateBy { it.principle.id }
+    val frontPrinciple = Principles.ALL[frontIndex]
+    val frontState = stateById[frontPrinciple.id] ?: fallbackState(frontPrinciple)
+    val accent = Color(frontPrinciple.colorHex)
+    val density = LocalDensity.current.density
 
     val todayStr = DateUtils.format(today)
     val todayTasks = tasks.filter { it.date == todayStr }
@@ -77,260 +158,419 @@ fun TodayScreen(vm: AppViewModel) {
     val slipsToday = states.count { it.slippedToday }
     val dateLabel = today.format(DateTimeFormatter.ofPattern("EEEE, d MMMM", RU_LOCALE))
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                top = 20.dp,
-                bottom = 130.dp
-            )
-        ) {
-            item {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = dateLabel.replaceFirstChar { it.uppercase() },
-                            style = MaterialTheme.typography.labelSmall,
-                            color = Ink.TextFaint
-                        )
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text(
-                            text = "Сегодня",
-                            style = MaterialTheme.typography.displayMedium
-                        )
-                    }
-                    FlameBurst(streak = maxStreak, dimension = 64.dp)
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding = PaddingValues(top = 20.dp, bottom = 130.dp)
+    ) {
+        item {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = dateLabel.replaceFirstChar { it.uppercase() },
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Ink.TextFaint
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = "Сегодня",
+                        style = MaterialTheme.typography.displayMedium
+                    )
+                }
+                FlameBurst(streak = maxStreak, dimension = 62.dp)
+            }
+        }
+
+        item {
+            GlassCard(modifier = Modifier.fillMaxWidth(), glow = Ink.Ember) {
+                Row(verticalAlignment = Alignment.Bottom) {
+                    BigStreak(streak = maxStreak, fontSize = 46)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "дней",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Ink.TextDim,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                }
+                Text(
+                    text = "Лучший огонёк из 7 принципов",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Ink.TextDim
+                )
+                Spacer(modifier = Modifier.height(14.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    MiniStat(value = "$heldCount/${states.size}", label = "принципов", color = Ink.Mint)
+                    MiniStat(value = "$doneCount/${todayTasks.size}", label = "задач", color = Ink.Gold)
+                    MiniStat(
+                        value = "$slipsToday",
+                        label = "срывов",
+                        color = if (slipsToday > 0) Ink.Danger else Ink.TextDim
+                    )
                 }
             }
+        }
 
-            item {
-                GlassCard(modifier = Modifier.fillMaxWidth(), glow = Ink.Ember) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "ЛУЧШИЙ ОГОНЁК",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = Ink.TextFaint
-                            )
-                            Row(verticalAlignment = Alignment.Bottom) {
-                                BigStreak(streak = maxStreak, fontSize = 56)
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = "дней",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = Ink.TextDim,
-                                    modifier = Modifier.padding(bottom = 12.dp)
-                                )
-                            }
-                            Text(
-                                text = "Без срывов по лучшему принципу",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = Ink.TextDim
-                            )
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(18.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        MiniStat(
-                            value = "$heldCount/${states.size}",
-                            label = "принципов",
-                            color = Ink.Mint
-                        )
-                        MiniStat(
-                            value = "$doneCount/${todayTasks.size}",
-                            label = "задач",
-                            color = Ink.Gold
-                        )
-                        MiniStat(
-                            value = "$slipsToday",
-                            label = "срывов",
-                            color = if (slipsToday > 0) Ink.Danger else Ink.TextDim
-                        )
-                    }
-                }
-            }
-
-            item {
-                Spacer(modifier = Modifier.height(4.dp))
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 SectionHeader(
                     title = "Стержень",
-                    caption = "Дни идут сами — отмечай только срывы"
+                    caption = "Крути карусель · нажми на карточку, чтобы вынести её вперёд",
+                    modifier = Modifier.weight(1f)
                 )
+                Pill(text = "🔥 ${frontState.currentStreak}", color = accent)
             }
+        }
 
-            items(states, key = { it.principle.id }) { st ->
-                PrincipleRow(state = st) { sheetState = st }
-            }
+        // 3D-карусель принципов.
+        item {
+            BoxWithConstraints(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(360.dp)
+                    .clipToBounds()
+                    .draggable(
+                        state = rememberDraggableState { delta ->
+                            stopAuto()
+                            angle += delta * 0.22f
+                        },
+                        orientation = Orientation.Horizontal,
+                        onDragStarted = {
+                            dragging = true
+                            stopAuto()
+                        },
+                        onDragStopped = {
+                            dragging = false
+                            settleTo((angle / step).roundToInt() * step)
+                        }
+                    )
+            ) {
+                val width = maxWidth
+                val height = maxHeight
+                val cx = width / 2
+                val cy = height / 2
+                val radius = width * 0.50f
+                val cardW = 152.dp
+                val cardH = 190.dp
 
-            item {
-                Spacer(modifier = Modifier.height(4.dp))
-                SectionHeader(title = "Задачи на сегодня")
-            }
+                Canvas(modifier = Modifier.fillMaxSize()) {
+                    val r = size.minDimension * 0.72f
+                    drawCircle(
+                        brush = Brush.radialGradient(
+                            colors = listOf(accent.copy(alpha = 0.20f), Color.Transparent),
+                            center = Offset(size.width / 2f, size.height * 0.6f),
+                            radius = r
+                        ),
+                        radius = r,
+                        center = Offset(size.width / 2f, size.height * 0.6f)
+                    )
+                }
 
-            if (todayTasks.isEmpty()) {
-                item {
+                val ordered = Principles.ALL.indices.sortedBy { i ->
+                    cos((angle + i * step) * PI / 180.0)
+                }
+
+                ordered.forEach { index ->
+                    val principle = Principles.ALL[index]
+                    val st = stateById[principle.id] ?: fallbackState(principle)
+                    val a = angle + index * step
+                    val rad = a * PI / 180.0
+                    val cosA = cos(rad).toFloat()
+                    val sinA = sin(rad).toFloat()
+                    val t = (cosA + 1f) / 2f
+                    val perspective = 0.78f + 0.22f * t
+                    val cardColor = Color(principle.colorHex)
+
                     Box(
                         modifier = Modifier
-                            .fillMaxWidth()
+                            .offset(
+                                x = cx + radius * sinA - cardW / 2,
+                                y = cy - 26.dp * (1f - t) - cardH / 2
+                            )
+                            .size(cardW, cardH)
+                            .zIndex(cosA)
+                            .graphicsLayer {
+                                rotationY = a % 360f
+                                cameraDistance = 16f * density
+                                scaleX = perspective
+                                scaleY = perspective
+                                alpha = 0.18f + 0.82f * t
+                            }
                             .clip(RoundedCornerShape(24.dp))
-                            .background(Color.White.copy(alpha = 0.03f))
+                            .background(
+                                Brush.linearGradient(
+                                    listOf(
+                                        cardColor.copy(alpha = 0.95f),
+                                        cardColor.copy(alpha = 0.45f)
+                                    )
+                                )
+                            )
+                            .background(
+                                Brush.verticalGradient(
+                                    listOf(Color.Transparent, Color.Black.copy(alpha = 0.45f))
+                                )
+                            )
                             .border(
                                 1.dp,
-                                Color.White.copy(alpha = 0.06f),
+                                Color.White.copy(alpha = 0.10f + 0.32f * t),
                                 RoundedCornerShape(24.dp)
                             )
-                            .padding(20.dp)
+                            .clickable(enabled = cosA > 0.2f) {
+                                stopAuto()
+                                val current = ((angle + index * step) % 360f + 540f) % 360f - 180f
+                                settleTo(angle - current)
+                            }
+                            .padding(13.dp)
                     ) {
+                        Column(
+                            modifier = Modifier.fillMaxSize(),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(44.dp)
+                                    .clip(CircleShape)
+                                    .background(Color.White.copy(alpha = 0.16f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(text = principle.emoji, fontSize = 22.sp)
+                            }
+                            Spacer(modifier = Modifier.height(9.dp))
+                            Text(
+                                text = principle.title,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp,
+                                color = Color.White,
+                                textAlign = TextAlign.Center,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                                lineHeight = 16.sp
+                            )
+                            Spacer(modifier = Modifier.weight(1f))
+                            if (st.slippedToday) {
+                                Text(
+                                    text = "СРЫВ",
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFFFFD7DB),
+                                    letterSpacing = 1.4.sp
+                                )
+                                Spacer(modifier = Modifier.height(3.dp))
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = if (st.currentStreak > 0) "🔥" else "🧊",
+                                    fontSize = 13.sp
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "${st.currentStreak}",
+                                    fontWeight = FontWeight.Black,
+                                    fontSize = 17.sp,
+                                    color = Color.White
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Principles.ALL.forEachIndexed { i, p ->
+                    val active = i == frontIndex
+                    Box(
+                        modifier = Modifier
+                            .padding(horizontal = 3.dp)
+                            .size(width = if (active) 18.dp else 6.dp, height = 6.dp)
+                            .clip(CircleShape)
+                            .background(
+                                if (active) Color(p.colorHex) else Color.White.copy(alpha = 0.16f)
+                            )
+                    )
+                }
+            }
+        }
+
+        // Детали активного принципа.
+        item {
+            GlassCard(modifier = Modifier.fillMaxWidth(), glow = accent) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    StreakRing(
+                        streak = frontState.currentStreak,
+                        color = accent,
+                        emoji = frontPrinciple.emoji,
+                        dimension = 52.dp,
+                        strokeWidth = 3.5.dp
+                    )
+                    Spacer(modifier = Modifier.width(14.dp))
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Пусто. Добавь первую задачу — и день начнётся.",
-                            style = MaterialTheme.typography.bodyMedium,
+                            text = frontPrinciple.title,
+                            style = MaterialTheme.typography.titleLarge
+                        )
+                        Text(
+                            text = frontPrinciple.subtitle,
+                            style = MaterialTheme.typography.bodySmall,
                             color = Ink.TextDim
                         )
                     }
-                }
-            }
-
-            items(todayTasks, key = { it.id }) { task ->
-                TaskRow(
-                    task = task,
-                    onToggle = { vm.toggleTask(task) },
-                    onDelete = { vm.deleteTask(task) }
-                )
-            }
-
-            item {
-                Spacer(modifier = Modifier.height(4.dp))
-                AddTaskField(
-                    value = newTask,
-                    onValueChange = { newTask = it },
-                    onAdd = {
-                        vm.addTask(newTask, today)
-                        newTask = ""
-                    }
-                )
-            }
-        }
-
-        val sheet = sheetState
-        if (sheet != null) {
-            val state = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-            ModalBottomSheet(
-                onDismissRequest = { sheetState = null },
-                sheetState = state,
-                containerColor = Ink.Card
-            ) {
-                Column(modifier = Modifier.padding(horizontal = 20.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        StreakRing(
-                            streak = sheet.currentStreak,
-                            color = Color(sheet.principle.colorHex),
-                            emoji = sheet.principle.emoji,
-                            dimension = 52.dp
-                        )
-                        Spacer(modifier = Modifier.width(14.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = sheet.principle.title,
-                                style = MaterialTheme.typography.titleLarge
-                            )
-                            Text(
-                                text = "${sheet.currentStreak} дн. подряд · рекорд ${sheet.bestStreak}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = Ink.TextDim
-                            )
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(18.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.Bottom
-                    ) {
+                    Column(horizontalAlignment = Alignment.End) {
+                        BigStreak(streak = frontState.currentStreak, fontSize = 36, color = accent)
                         Text(
-                            text = "Последние 14 дней",
+                            text = "дней",
                             style = MaterialTheme.typography.bodySmall,
                             color = Ink.TextFaint
                         )
-                        DayStrip(days = sheet.lastDays, barHeight = 24.dp)
                     }
+                }
 
-                    Spacer(modifier = Modifier.height(14.dp))
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(Color.White.copy(alpha = 0.04f))
-                            .clickable {
-                                pickerFor = sheet
-                                sheetState = null
-                            }
-                            .padding(horizontal = 14.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "Начало отсчёта",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = Ink.TextFaint
-                            )
-                            Text(
-                                text = sheet.startDate
-                                    ?.format(DateTimeFormatter.ofPattern("d MMMM yyyy", RU_LOCALE))
-                                    ?: "не задано",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = Ink.Text
-                            )
-                        }
+                Spacer(modifier = Modifier.height(12.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Pill(text = "рекорд ${frontState.bestStreak}", color = Ink.Gold)
+                    Pill(
+                        text = if (frontState.currentStreak >= 30) "легенда"
+                        else "до 30: ${(30 - frontState.currentStreak).coerceAtLeast(0)}",
+                        color = Ink.TextDim
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+                MilestoneBar(streak = frontState.currentStreak, color = accent)
+
+                Spacer(modifier = Modifier.height(16.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.Bottom,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "Последние 14 дней",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Ink.TextFaint
+                    )
+                    DayStrip(days = frontState.lastDays)
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(Color.White.copy(alpha = 0.04f))
+                        .clickable { showStartPicker = true }
+                        .padding(horizontal = 14.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "изменить",
+                            text = "Начало отсчёта",
                             style = MaterialTheme.typography.bodySmall,
-                            color = Ink.Gold
+                            color = Ink.TextFaint
+                        )
+                        Text(
+                            text = frontState.startDate
+                                ?.format(DateTimeFormatter.ofPattern("d MMMM yyyy", RU_LOCALE))
+                                ?: "не задано",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = Ink.Text
                         )
                     }
+                    Text(
+                        text = "изменить",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Ink.Gold
+                    )
+                }
 
-                    Spacer(modifier = Modifier.height(22.dp))
-                    if (sheet.slippedToday) {
-                        OutlineButton(
-                            text = "Отменить срыв сегодня",
-                            modifier = Modifier.fillMaxWidth(),
-                            color = Ink.Mint
-                        ) {
-                            vm.toggleSlip(sheet.principle.id, true)
-                            sheetState = null
-                        }
-                    } else {
-                        GlowButton(
-                            text = "Сорвался сегодня",
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = listOf(Ink.Danger, Color(0xFFC22B4A))
-                        ) {
-                            vm.toggleSlip(sheet.principle.id, false)
-                            sheetState = null
-                        }
+                Spacer(modifier = Modifier.height(14.dp))
+                if (frontState.slippedToday) {
+                    OutlineButton(
+                        text = "Отменить срыв",
+                        modifier = Modifier.fillMaxWidth(),
+                        color = Ink.Mint
+                    ) {
+                        vm.toggleSlip(frontPrinciple.id, true)
                     }
-                    Spacer(modifier = Modifier.height(40.dp))
+                } else {
+                    OutlineButton(
+                        text = "Сообщить о срыве",
+                        modifier = Modifier.fillMaxWidth(),
+                        color = Ink.Danger
+                    ) {
+                        vm.toggleSlip(frontPrinciple.id, false)
+                    }
                 }
             }
         }
 
-        val picker = pickerFor
-        if (picker != null) {
-            StartDateDialog(
-                title = "С какой даты считать «${picker.principle.title}»",
-                initial = picker.startDate,
-                onDismiss = { pickerFor = null },
-                onConfirm = { date ->
-                    vm.setStartDate(picker.principle.id, date)
-                    pickerFor = null
+        item {
+            Spacer(modifier = Modifier.height(2.dp))
+            SectionHeader(title = "Задачи на сегодня")
+        }
+
+        if (todayTasks.isEmpty()) {
+            item {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(24.dp))
+                        .background(Color.White.copy(alpha = 0.03f))
+                        .border(1.dp, Color.White.copy(alpha = 0.06f), RoundedCornerShape(24.dp))
+                        .padding(20.dp)
+                ) {
+                    Text(
+                        text = "Пусто. Добавь первую задачу — и день начнётся.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Ink.TextDim
+                    )
+                }
+            }
+        }
+
+        items(todayTasks, key = { it.id }) { task ->
+            TaskRow(
+                task = task,
+                onToggle = { vm.toggleTask(task) },
+                onDelete = { vm.deleteTask(task) }
+            )
+        }
+
+        item {
+            AddTaskField(
+                value = newTask,
+                onValueChange = { newTask = it },
+                onAdd = {
+                    vm.addTask(newTask, today)
+                    newTask = ""
                 }
             )
         }
+    }
+
+    if (showStartPicker) {
+        StartDateDialog(
+            title = "С какой даты считать «${frontPrinciple.title}»",
+            initial = frontState.startDate,
+            onDismiss = { showStartPicker = false },
+            onConfirm = { date ->
+                vm.setStartDate(frontPrinciple.id, date)
+                showStartPicker = false
+            }
+        )
     }
 }
 
@@ -352,53 +592,6 @@ private fun MiniStat(value: String, label: String, color: Color) {
 }
 
 @Composable
-private fun PrincipleRow(state: PrincipleState, onClick: () -> Unit) {
-    val accent = Color(state.principle.colorHex)
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(24.dp))
-            .background(
-                Brush.horizontalGradient(
-                    listOf(
-                        accent.copy(alpha = if (state.slippedToday) 0.16f else 0.10f),
-                        Color.White.copy(alpha = 0.03f)
-                    )
-                )
-            )
-            .border(1.dp, Color.White.copy(alpha = 0.07f), RoundedCornerShape(24.dp))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        StreakRing(
-            streak = state.currentStreak,
-            color = accent,
-            emoji = state.principle.emoji,
-            dimension = 44.dp
-        )
-        Spacer(modifier = Modifier.width(12.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = state.principle.title,
-                style = MaterialTheme.typography.titleMedium,
-                color = Ink.Text
-            )
-            Text(
-                text = if (state.slippedToday) "Срыв отмечен" else state.principle.subtitle,
-                style = MaterialTheme.typography.bodySmall,
-                color = if (state.slippedToday) Ink.Danger else Ink.TextFaint
-            )
-        }
-        Spacer(modifier = Modifier.width(8.dp))
-        Pill(
-            text = if (state.currentStreak > 0) "🔥 ${state.currentStreak}" else "—",
-            color = if (state.currentStreak > 0) accent else Ink.TextFaint
-        )
-    }
-}
-
-@Composable
 private fun TaskRow(task: TaskEntity, onToggle: () -> Unit, onDelete: () -> Unit) {
     Row(
         modifier = Modifier
@@ -413,9 +606,7 @@ private fun TaskRow(task: TaskEntity, onToggle: () -> Unit, onDelete: () -> Unit
             modifier = Modifier
                 .size(24.dp)
                 .clip(CircleShape)
-                .background(
-                    if (task.done) Ink.Mint.copy(alpha = 0.9f) else Color.Transparent
-                )
+                .background(if (task.done) Ink.Mint.copy(alpha = 0.9f) else Color.Transparent)
                 .border(
                     1.5.dp,
                     if (task.done) Ink.Mint else Color.White.copy(alpha = 0.25f),

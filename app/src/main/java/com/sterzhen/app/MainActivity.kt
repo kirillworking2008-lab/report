@@ -31,7 +31,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.BarChart
 import androidx.compose.material.icons.rounded.DateRange
 import androidx.compose.material.icons.rounded.Home
-import androidx.compose.material.icons.rounded.Whatshot
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -54,7 +53,6 @@ import com.sterzhen.app.data.Repository
 import com.sterzhen.app.data.db.AppDatabase
 import com.sterzhen.app.ui.AppViewModel
 import com.sterzhen.app.ui.components.AuroraBackground
-import com.sterzhen.app.ui.screens.CoreScreen
 import com.sterzhen.app.ui.screens.ReportsScreen
 import com.sterzhen.app.ui.screens.TodayScreen
 import com.sterzhen.app.ui.screens.WeekScreen
@@ -67,7 +65,6 @@ private data class NavItem(val label: String, val icon: ImageVector)
 private val NAV_ITEMS = listOf(
     NavItem("Сегодня", Icons.Rounded.Home),
     NavItem("Неделя", Icons.Rounded.DateRange),
-    NavItem("Стержень", Icons.Rounded.Whatshot),
     NavItem("Отчёты", Icons.Rounded.BarChart)
 )
 
@@ -104,7 +101,6 @@ class MainActivity : ComponentActivity() {
                                 when (current) {
                                     0 -> TodayScreen(vm)
                                     1 -> WeekScreen(vm)
-                                    2 -> CoreScreen(vm)
                                     else -> ReportsScreen(vm)
                                 }
                             }

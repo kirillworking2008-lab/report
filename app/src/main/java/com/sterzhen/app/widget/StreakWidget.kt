@@ -11,6 +11,8 @@ import android.widget.RemoteViews
 import com.sterzhen.app.MainActivity
 import com.sterzhen.app.R
 import com.sterzhen.app.data.DateUtils
+import com.sterzhen.app.data.Principle
+import com.sterzhen.app.data.Principles
 import com.sterzhen.app.data.autoStreak
 import com.sterzhen.app.data.db.AppDatabase
 import kotlinx.coroutines.CoroutineScope
@@ -20,52 +22,73 @@ import java.time.LocalDate
 import java.time.ZoneId
 
 /**
- * Виджет 1×1: огонёк и число дней лучшей серии.
- * Обновляется сам: в полночь (AlarmManager), при изменении данных в приложении
- * и после перезагрузки телефона.
+ * Виджет «Огонёк» 2×1 — по одному на принцип.
+ * При добавлении на экран открывается выбор принципа, подпись и огонёк
+ * показывают именно его серию.
  */
 object StreakWidget {
 
     const val ACTION_REFRESH = "com.sterzhen.app.WIDGET_REFRESH"
     private const val ALARM_REQUEST_CODE = 4242
+    private const val PREFS = "sterzhen_widgets"
 
-    /** Перерисовать все экземпляры виджета (из приложения). */
+    // ---- привязка виджета к принципу ----
+
+    fun savePrinciple(context: Context, appWidgetId: Int, principleId: String) {
+        prefs(context).edit().putString("p_$appWidgetId", principleId).apply()
+    }
+
+    fun principleId(context: Context, appWidgetId: Int): String? =
+        prefs(context).getString("p_$appWidgetId", null)
+
+    fun clearPrinciple(context: Context, appWidgetId: Int) {
+        prefs(context).edit().remove("p_$appWidgetId").apply()
+    }
+
+    private fun prefs(context: Context) =
+        context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+
+    // ---- обновление ----
+
+    /** Перерисовать все экземпляры виджета (вызывается из приложения). */
     fun refresh(context: Context) {
         val appContext = context.applicationContext
         CoroutineScope(Dispatchers.IO).launch { render(appContext) }
     }
 
-    /** Перерисовать все экземпляры виджета и дождаться результата. */
+    /** Перерисовать все экземпляры и дождаться результата. */
     suspend fun render(context: Context) {
         val appContext = context.applicationContext
         val manager = AppWidgetManager.getInstance(appContext)
-        val component = ComponentName(appContext, StreakWidgetProvider::class.java)
-        val ids = manager.getAppWidgetIds(component)
+        val ids = manager.getAppWidgetIds(
+            ComponentName(appContext, StreakWidgetProvider::class.java)
+        )
         if (ids.isEmpty()) return
-        val streak = bestStreak(appContext)
-        ids.forEach { id -> manager.updateAppWidget(id, buildViews(appContext, streak)) }
-    }
 
-    /** Самая длинная текущая серия среди всех принципов. */
-    suspend fun bestStreak(context: Context): Int {
-        val dao = AppDatabase.getInstance(context).principleDao()
+        val dao = AppDatabase.getInstance(appContext).principleDao()
         val today = LocalDate.now()
+        val metaById = dao.metaOnce().associateBy { it.principleId }
         val slipsByPrinciple = dao.slipsOnce().groupBy { it.principleId }
-        return dao.metaOnce().maxOfOrNull { meta ->
-            val start = DateUtils.parse(meta.startDate)
-            val slips = slipsByPrinciple[meta.principleId]
+
+        ids.forEach { id ->
+            val principle = Principles.byId(principleId(appContext, id) ?: "")
+                ?: Principles.ALL.first()
+            val start = metaById[principle.id]?.let { DateUtils.parse(it.startDate) }
+            val slips = slipsByPrinciple[principle.id]
                 .orEmpty()
                 .map { DateUtils.parse(it.date) }
                 .toSet()
-            autoStreak(start, slips, today)
-        } ?: 0
+            val streak = if (start != null) autoStreak(start, slips, today) else 0
+            manager.updateAppWidget(id, buildViews(appContext, principle, streak))
+        }
     }
 
-    private fun buildViews(context: Context, streak: Int): RemoteViews {
+    private fun buildViews(context: Context, principle: Principle, streak: Int): RemoteViews {
         val views = RemoteViews(context.packageName, R.layout.widget_streak)
+        views.setTextViewText(R.id.widget_emoji, if (streak > 0) principle.emoji else "🧊")
+        views.setTextViewText(R.id.widget_name, principle.title)
         views.setTextViewText(R.id.widget_number, streak.toString())
         views.setTextColor(R.id.widget_number, numberColor(streak))
-        views.setTextViewText(R.id.widget_flame, if (streak > 0) "🔥" else "🧊")
 
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
@@ -88,7 +111,8 @@ object StreakWidget {
         else -> Color.parseColor("#6EA8FF")
     }
 
-    /** Будильник на ближайшую полночь: стрик сам вырастет на 1. */
+    // ---- будильник на полночь ----
+
     fun scheduleNightlyUpdate(context: Context) {
         val appContext = context.applicationContext
         val manager = appContext.getSystemService(AlarmManager::class.java) ?: return

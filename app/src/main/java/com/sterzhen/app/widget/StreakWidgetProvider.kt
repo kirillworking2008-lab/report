@@ -44,6 +44,11 @@ class StreakWidgetProvider : AppWidgetProvider() {
         }
     }
 
+    override fun onDeleted(context: Context, appWidgetIds: IntArray) {
+        super.onDeleted(context, appWidgetIds)
+        appWidgetIds.forEach { StreakWidget.clearPrinciple(context, it) }
+    }
+
     override fun onDisabled(context: Context) {
         super.onDisabled(context)
         StreakWidget.cancelNightlyUpdate(context)
