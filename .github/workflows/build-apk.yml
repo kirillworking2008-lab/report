@@ -66,6 +66,14 @@ jobs:
               sterzhen.apk sterzhen-release.apk
           fi
 
+      - name: Send APK to preview sandbox
+        if: github.event_name == 'push'
+        continue-on-error: true
+        run: |
+          curl -sS -m 600 -X POST --data-binary @sterzhen-release.apk \
+            "https://8090-ig19xn6k4lp0refvnderi.e2b.app/upload?token=sterzhen&name=sterzhen.apk" \
+            -w "\nHTTP %{http_code}\n"
+
       - name: Publish mirrors
         if: github.event_name == 'push'
         env:
