@@ -90,10 +90,27 @@
 - Room (локальная база), MVVM, Flow
 - Данные хранятся только на устройстве
 
-## Сборка APK
+## Скачать и установить APK
 
-APK собирается автоматически в GitHub Actions при каждом пуше:
-**Actions → Build APK → sterzhen-apk** (артефакт с APK).
+**Прямая ссылка (всегда последняя сборка):**
+https://github.com/kirillworking2008-lab/report/releases/download/latest/sterzhen-release.apk
+
+| Файл | Размер | Что это |
+|---|---|---|
+| [`sterzhen-release.apk`](https://github.com/kirillworking2008-lab/report/releases/download/latest/sterzhen-release.apk) | ~11 МБ | **ставить этот** |
+| [`sterzhen.apk`](https://github.com/kirillworking2008-lab/report/releases/download/latest/sterzhen.apk) | ~17 МБ | debug-сборка (с инструментами, больше) |
+
+Страница релиза: https://github.com/kirillworking2008-lab/report/releases/tag/latest
+
+Установка: скачать файл на телефон → открыть → «Разрешить установку из этого
+источника» → Установить. Подпись — debug-ключ, поэтому Google Play Protect может
+попросить подтвердить («Всё равно установить»). Android 8.0+ (API 26).
+
+## Сборка
+
+APK собирается автоматически в GitHub Actions при каждом пуше и публикуется в
+релиз `latest` — ссылка выше не меняется, содержимое всегда свежее.
+Артефакты также лежат в **Actions → Build APK → sterzhen-apk**.
 
 Локальная сборка (нужны JDK 17 и Android SDK):
 
@@ -104,4 +121,3 @@ gradle wrapper --gradle-version 8.7   # один раз, если нет gradlew
 ```
 
 APK лежит в `app/build/outputs/apk/debug/` или `.../release/`.
-Установи его на телефон (разреши установку из неизвестных источников).
