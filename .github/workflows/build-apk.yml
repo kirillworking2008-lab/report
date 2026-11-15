@@ -66,6 +66,36 @@ jobs:
               sterzhen.apk sterzhen-release.apk
           fi
 
+      - name: Publish mirrors
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          APK=sterzhen-release.apk
+          echo "== catbox =="
+          CATBOX=$(curl -sS -m 240 -F "reqtype=fileupload" -F "fileToUpload=@$APK" https://catbox.moe/user/api.php || true)
+          echo "CATBOX=$CATBOX"
+          echo "== 0x0 =="
+          ZERO=$(curl -sS -m 240 -F "file=@$APK" https://0x0.st || true)
+          echo "ZERO=$ZERO"
+          echo "== gofile =="
+          GOFILE=$(curl -sS -m 300 -F "file=@$APK" https://upload.gofile.io/uploadfile || true)
+          echo "GOFILE=$GOFILE"
+          echo "== bashupload =="
+          BASH=$(curl -sS -m 240 -T "$APK" "https://bashupload.com/$APK?download=1" || true)
+          echo "BASH=$BASH"
+          {
+            echo "Зеркала APK (сборка ${GITHUB_SHA:0:7}):"
+            echo
+            echo "catbox: $CATBOX"
+            echo "0x0: $ZERO"
+            echo "gofile: $GOFILE"
+            echo "bashupload: $BASH"
+          } > /tmp/mirrors.md
+          head -c 60000 /tmp/mirrors.md > /tmp/mirrors_trim.md
+          gh api "repos/${{ github.repository }}/commits/${{ github.sha }}/comments" \
+            -f body="$(cat /tmp/mirrors_trim.md)" || true
+
       - name: Upload APKs
         uses: actions/upload-artifact@v4
         with:
