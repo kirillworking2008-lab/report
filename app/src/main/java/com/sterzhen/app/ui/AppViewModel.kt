@@ -22,6 +22,13 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 
+/** Шаблон набора задач: имя + список пунктов. */
+data class TaskTemplate(
+    val id: Long,
+    val name: String,
+    val items: List<String>
+)
+
 data class PrincipleState(
     val principle: Principle,
     /** Текущий стрик в днях, обновляется сам каждый день. */
@@ -67,6 +74,20 @@ class AppViewModel(
 
     val meta: StateFlow<List<PrincipleMetaEntity>> = repo.meta()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val templates: StateFlow<List<TaskTemplate>> =
+        combine(repo.templates(), repo.templateItems()) { list, items ->
+            val byTemplate = items.groupBy { it.templateId }
+            list.map { template ->
+                TaskTemplate(
+                    id = template.id,
+                    name = template.name,
+                    items = byTemplate[template.id].orEmpty()
+                        .sortedBy { it.position }
+                        .map { it.title }
+                )
+            }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     val principleStates: StateFlow<List<PrincipleState>> =
         combine(repo.slips(), repo.meta(), today) { slipList, metaList, t ->
@@ -119,6 +140,40 @@ class AppViewModel(
     fun deleteTask(task: TaskEntity) {
         viewModelScope.launch {
             repo.deleteTask(task)
+            onDataChanged()
+        }
+    }
+
+    // ---- шаблоны задач ----
+
+    /** Создать шаблон: имя + список задач. */
+    fun createTemplate(name: String, titles: List<String>) {
+        if (name.isBlank()) return
+        viewModelScope.launch {
+            repo.createTemplate(name, titles)
+            onDataChanged()
+        }
+    }
+
+    /** Сохранить все задачи дня как шаблон. */
+    fun saveDayAsTemplate(name: String, date: LocalDate) {
+        if (name.isBlank()) return
+        val key = DateUtils.format(date)
+        val titles = tasks.value.filter { it.date == key }.map { it.title }
+        createTemplate(name, titles)
+    }
+
+    /** Развернуть шаблон в задачи дня. */
+    fun applyTemplate(templateId: Long, date: LocalDate) {
+        viewModelScope.launch {
+            repo.applyTemplate(templateId, DateUtils.format(date))
+            onDataChanged()
+        }
+    }
+
+    fun deleteTemplate(id: Long) {
+        viewModelScope.launch {
+            repo.deleteTemplate(id)
             onDataChanged()
         }
     }

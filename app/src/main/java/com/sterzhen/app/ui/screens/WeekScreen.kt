@@ -44,6 +44,9 @@ import com.sterzhen.app.ui.RU_LOCALE
 import com.sterzhen.app.ui.components.GlassCard
 import com.sterzhen.app.ui.components.Pill
 import com.sterzhen.app.ui.components.SectionHeader
+import com.sterzhen.app.ui.components.TemplateItemsDialog
+import com.sterzhen.app.ui.components.TemplateNameDialog
+import com.sterzhen.app.ui.components.TemplatePickerDialog
 import com.sterzhen.app.ui.dayShortName
 import com.sterzhen.app.ui.theme.Ink
 import com.sterzhen.app.ui.theme.Radii
@@ -61,6 +64,10 @@ fun WeekScreen(vm: AppViewModel) {
     var weekOffset by remember { mutableIntStateOf(0) }
     var selected by remember { mutableStateOf(today) }
     var newTask by remember { mutableStateOf("") }
+    var showTemplates by remember { mutableStateOf(false) }
+    var showSaveTemplate by remember { mutableStateOf(false) }
+    var showNewTemplate by remember { mutableStateOf(false) }
+    val templates by vm.templates.collectAsState()
 
     val monday = today
         .with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
@@ -196,6 +203,22 @@ fun WeekScreen(vm: AppViewModel) {
                     text = if (selectedSlips.isEmpty()) "без срывов" else "срывов: ${selectedSlips.size}",
                     color = if (selectedSlips.isEmpty()) Ink.Mint else Ink.Danger
                 )
+                Spacer(modifier = Modifier.width(8.dp))
+                Box(
+                    modifier = Modifier
+                        .clip(CircleShape)
+                        .background(Ink.Ember.copy(alpha = 0.10f))
+                        .border(1.dp, Ink.Ember.copy(alpha = 0.30f), CircleShape)
+                        .clickable { showTemplates = true }
+                        .padding(horizontal = 10.dp, vertical = 6.dp)
+                ) {
+                    Text(
+                        text = "📋 шаблон",
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight(680),
+                        color = Ink.Ember
+                    )
+                }
             }
         }
 
@@ -273,6 +296,46 @@ fun WeekScreen(vm: AppViewModel) {
                 }
             }
         }
+    }
+
+    if (showTemplates) {
+        TemplatePickerDialog(
+            templates = templates,
+            dayLabel = selected.format(DateTimeFormatter.ofPattern("d MMMM", RU_LOCALE)),
+            dayTaskCount = selectedTasks.size,
+            onPick = { template ->
+                vm.applyTemplate(template.id, selected)
+                showTemplates = false
+            },
+            onSaveDayAsTemplate = {
+                showTemplates = false
+                if (selectedTasks.isNotEmpty()) showSaveTemplate = true else showNewTemplate = true
+            },
+            onDismiss = { showTemplates = false }
+        )
+    }
+
+    if (showSaveTemplate) {
+        TemplateNameDialog(
+            title = "Шаблон из задач дня",
+            initial = "",
+            hint = "Сохраним ${selectedTasks.size} задач(и) выбранного дня",
+            onDismiss = { showSaveTemplate = false },
+            onConfirm = { name ->
+                vm.createTemplate(name, selectedTasks.map { it.title })
+                showSaveTemplate = false
+            }
+        )
+    }
+
+    if (showNewTemplate) {
+        TemplateItemsDialog(
+            onDismiss = { showNewTemplate = false },
+            onConfirm = { name, items ->
+                vm.createTemplate(name, items)
+                showNewTemplate = false
+            }
+        )
     }
 }
 

@@ -11,6 +11,8 @@ import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import kotlinx.coroutines.flow.Flow
 
 @Entity(tableName = "tasks")
@@ -39,6 +41,25 @@ data class PrincipleSlipEntity(
 data class PrincipleMetaEntity(
     @PrimaryKey val principleId: String,
     val startDate: String
+)
+
+/**
+ * Шаблон набора задач: «Утро», «Спорт», «Перед сном» — что угодно,
+ * что повторяется изо дня в день.
+ */
+@Entity(tableName = "task_templates")
+data class TaskTemplateEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val name: String,
+    val createdAt: Long = System.currentTimeMillis()
+)
+
+@Entity(tableName = "task_template_items")
+data class TaskTemplateItemEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val templateId: Long,
+    val title: String,
+    val position: Int = 0
 )
 
 @Dao
@@ -93,20 +114,66 @@ interface PrincipleDao {
     suspend fun migrateProcrastinationMeta()
 }
 
+@Dao
+interface TemplateDao {
+    @Query("SELECT * FROM task_templates ORDER BY createdAt DESC")
+    fun templates(): Flow<List<TaskTemplateEntity>>
+
+    @Query("SELECT * FROM task_template_items ORDER BY position ASC")
+    fun allItems(): Flow<List<TaskTemplateItemEntity>>
+
+    @Query("SELECT * FROM task_template_items WHERE templateId = :templateId ORDER BY position ASC")
+    suspend fun itemsFor(templateId: Long): List<TaskTemplateItemEntity>
+
+    @Insert
+    suspend fun insertTemplate(template: TaskTemplateEntity): Long
+
+    @Insert
+    suspend fun insertItems(items: List<TaskTemplateItemEntity>)
+
+    @Query("DELETE FROM task_template_items WHERE templateId = :templateId")
+    suspend fun clearItems(templateId: Long)
+
+    @Query("DELETE FROM task_templates WHERE id = :templateId")
+    suspend fun deleteTemplate(templateId: Long)
+}
+
 @Database(
     entities = [
         TaskEntity::class,
         PrincipleSlipEntity::class,
-        PrincipleMetaEntity::class
+        PrincipleMetaEntity::class,
+        TaskTemplateEntity::class,
+        TaskTemplateItemEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun taskDao(): TaskDao
     abstract fun principleDao(): PrincipleDao
+    abstract fun templateDao(): TemplateDao
 
     companion object {
+        /** 1 → 2: таблицы шаблонов задач. Данные пользователя не трогаем. */
+        private val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `task_templates` (" +
+                        "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                        "`name` TEXT NOT NULL, " +
+                        "`createdAt` INTEGER NOT NULL)"
+                )
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `task_template_items` (" +
+                        "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                        "`templateId` INTEGER NOT NULL, " +
+                        "`title` TEXT NOT NULL, " +
+                        "`position` INTEGER NOT NULL)"
+                )
+            }
+        }
+
         @Volatile
         private var INSTANCE: AppDatabase? = null
 
@@ -116,7 +183,10 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "sterzhen.db"
-                ).build().also { INSTANCE = it }
+                )
+                    .addMigrations(MIGRATION_1_2)
+                    .build()
+                    .also { INSTANCE = it }
             }
         }
     }

@@ -4,6 +4,8 @@ import com.sterzhen.app.data.db.AppDatabase
 import com.sterzhen.app.data.db.PrincipleMetaEntity
 import com.sterzhen.app.data.db.PrincipleSlipEntity
 import com.sterzhen.app.data.db.TaskEntity
+import com.sterzhen.app.data.db.TaskTemplateEntity
+import com.sterzhen.app.data.db.TaskTemplateItemEntity
 import kotlinx.coroutines.flow.Flow
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -36,6 +38,38 @@ class Repository(private val db: AppDatabase) {
     /** Ручная правка даты, с которой считается серия. */
     suspend fun setStartDate(principleId: String, date: String) {
         db.principleDao().upsertMeta(PrincipleMetaEntity(principleId, date))
+    }
+
+    // ---- шаблоны задач ----
+
+    fun templates(): Flow<List<TaskTemplateEntity>> = db.templateDao().templates()
+
+    fun templateItems(): Flow<List<TaskTemplateItemEntity>> = db.templateDao().allItems()
+
+    /** Создать шаблон из списка названий задач. */
+    suspend fun createTemplate(name: String, titles: List<String>): Long {
+        val clean = titles.map { it.trim() }.filter { it.isNotEmpty() }
+        val templateId = db.templateDao().insertTemplate(TaskTemplateEntity(name = name.trim()))
+        if (clean.isNotEmpty()) {
+            db.templateDao().insertItems(
+                clean.mapIndexed { index, title ->
+                    TaskTemplateItemEntity(templateId = templateId, title = title, position = index)
+                }
+            )
+        }
+        return templateId
+    }
+
+    suspend fun deleteTemplate(templateId: Long) {
+        db.templateDao().clearItems(templateId)
+        db.templateDao().deleteTemplate(templateId)
+    }
+
+    /** Развернуть шаблон в задачи конкретного дня. Возвращает число добавленных. */
+    suspend fun applyTemplate(templateId: Long, date: String): Int {
+        val items = db.templateDao().itemsFor(templateId)
+        items.forEach { item -> db.taskDao().insert(TaskEntity(title = item.title, date = date)) }
+        return items.size
     }
 
     suspend fun addTask(title: String, date: String) {

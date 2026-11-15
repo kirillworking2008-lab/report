@@ -73,6 +73,9 @@ import com.sterzhen.app.ui.components.OutlineButton
 import com.sterzhen.app.ui.components.Pill
 import com.sterzhen.app.ui.components.SectionHeader
 import com.sterzhen.app.ui.components.StartDateDialog
+import com.sterzhen.app.ui.components.TemplateItemsDialog
+import com.sterzhen.app.ui.components.TemplateNameDialog
+import com.sterzhen.app.ui.components.TemplatePickerDialog
 import com.sterzhen.app.ui.components.StreakRing
 import com.sterzhen.app.ui.theme.Ink
 import com.sterzhen.app.ui.theme.Radii
@@ -106,6 +109,10 @@ fun TodayScreen(vm: AppViewModel) {
 
     var newTask by remember { mutableStateOf("") }
     var showStartPicker by remember { mutableStateOf(false) }
+    var showTemplates by remember { mutableStateOf(false) }
+    var showSaveTemplate by remember { mutableStateOf(false) }
+    var showNewTemplate by remember { mutableStateOf(false) }
+    val templates by vm.templates.collectAsState()
 
     var angle by remember { mutableFloatStateOf(0f) }
     var dragging by remember { mutableStateOf(false) }
@@ -560,7 +567,29 @@ fun TodayScreen(vm: AppViewModel) {
 
         item {
             Spacer(modifier = Modifier.height(2.dp))
-            SectionHeader(title = "Задачи на сегодня")
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(modifier = Modifier.weight(1f)) {
+                    SectionHeader(title = "Задачи на сегодня")
+                }
+                Box(
+                    modifier = Modifier
+                        .clip(CircleShape)
+                        .background(Ink.Ember.copy(alpha = 0.10f))
+                        .border(1.dp, Ink.Ember.copy(alpha = 0.30f), CircleShape)
+                        .clickable { showTemplates = true }
+                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                ) {
+                    Text(
+                        text = "📋 Шаблоны",
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight(680),
+                        color = Ink.Ember
+                    )
+                }
+            }
         }
 
         if (todayTasks.isEmpty()) {
@@ -600,6 +629,48 @@ fun TodayScreen(vm: AppViewModel) {
                 }
             )
         }
+    }
+
+    if (showTemplates) {
+        TemplatePickerDialog(
+            templates = templates,
+            dayLabel = "сегодня",
+            dayTaskCount = todayTasks.size,
+            onPick = { template ->
+                vm.applyTemplate(template.id, today)
+                showTemplates = false
+            },
+            onSaveDayAsTemplate = {
+                showTemplates = false
+                if (todayTasks.isNotEmpty()) showSaveTemplate = true else showNewTemplate = true
+            },
+            onDismiss = { showTemplates = false }
+        )
+    }
+
+    if (showSaveTemplate) {
+        TemplateNameDialog(
+            title = "Шаблон из задач дня",
+            initial = "",
+            hint = "Сохраним ${todayTasks.size} " +
+                (if (todayTasks.size == 1) "задачу" else "задач") +
+                " сегодняшнего дня",
+            onDismiss = { showSaveTemplate = false },
+            onConfirm = { name ->
+                vm.saveDayAsTemplate(name, today)
+                showSaveTemplate = false
+            }
+        )
+    }
+
+    if (showNewTemplate) {
+        TemplateItemsDialog(
+            onDismiss = { showNewTemplate = false },
+            onConfirm = { name, items ->
+                vm.createTemplate(name, items)
+                showNewTemplate = false
+            }
+        )
     }
 
     if (showStartPicker) {
