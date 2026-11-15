@@ -29,6 +29,11 @@ class Repository(private val db: AppDatabase) {
             .forEach { db.principleDao().insertMeta(PrincipleMetaEntity(it.id, today)) }
     }
 
+    /** Ручная правка даты, с которой считается серия. */
+    suspend fun setStartDate(principleId: String, date: String) {
+        db.principleDao().upsertMeta(PrincipleMetaEntity(principleId, date))
+    }
+
     suspend fun addTask(title: String, date: String) {
         db.taskDao().insert(TaskEntity(title = title, date = date))
     }

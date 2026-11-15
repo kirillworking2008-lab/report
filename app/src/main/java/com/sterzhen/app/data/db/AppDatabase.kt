@@ -78,6 +78,9 @@ interface PrincipleDao {
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertMeta(meta: PrincipleMetaEntity)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertMeta(meta: PrincipleMetaEntity)
 }
 
 @Database(

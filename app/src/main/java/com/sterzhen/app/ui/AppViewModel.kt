@@ -32,7 +32,9 @@ data class PrincipleState(
     /** Принцип уже отслеживается (есть точка старта). */
     val tracked: Boolean,
     /** Последние 14 дней, от старых к новым. null = ещё не отслеживался. */
-    val lastDays: List<Boolean?>
+    val lastDays: List<Boolean?>,
+    /** Дата, с которой ведётся отсчёт (можно менять вручную). */
+    val startDate: LocalDate? = null
 )
 
 class AppViewModel(private val repo: Repository) : ViewModel() {
@@ -82,7 +84,8 @@ class AppViewModel(private val repo: Repository) : ViewModel() {
                         tracked = true,
                         lastDays = (13 downTo 0).map { offset ->
                             dayState(t.minusDays(offset.toLong()), start, slips)
-                        }
+                        },
+                        startDate = start
                     )
                 }
             }
@@ -106,6 +109,11 @@ class AppViewModel(private val repo: Repository) : ViewModel() {
 
     fun deleteTask(task: TaskEntity) {
         viewModelScope.launch { repo.deleteTask(task) }
+    }
+
+    /** Поменять дату начала отсчёта серии. */
+    fun setStartDate(principleId: String, date: LocalDate) {
+        viewModelScope.launch { repo.setStartDate(principleId, DateUtils.format(date)) }
     }
 
     /** Отметить/снять срыв на сегодня. Всё остальное считается само. */

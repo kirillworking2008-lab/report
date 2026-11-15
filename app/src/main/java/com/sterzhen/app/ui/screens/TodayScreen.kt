@@ -52,8 +52,10 @@ import com.sterzhen.app.ui.components.GlowButton
 import com.sterzhen.app.ui.components.OutlineButton
 import com.sterzhen.app.ui.components.Pill
 import com.sterzhen.app.ui.components.SectionHeader
+import com.sterzhen.app.ui.components.StartDateDialog
 import com.sterzhen.app.ui.components.StreakRing
 import com.sterzhen.app.ui.theme.Ink
+import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -66,6 +68,7 @@ fun TodayScreen(vm: AppViewModel) {
 
     var newTask by remember { mutableStateOf("") }
     var sheetState by remember { mutableStateOf<PrincipleState?>(null) }
+    var pickerFor by remember { mutableStateOf<PrincipleState?>(null) }
 
     val todayStr = DateUtils.format(today)
     val todayTasks = tasks.filter { it.date == todayStr }
@@ -256,6 +259,41 @@ fun TodayScreen(vm: AppViewModel) {
                         )
                         DayStrip(days = sheet.lastDays, barHeight = 24.dp)
                     }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(Color.White.copy(alpha = 0.04f))
+                            .clickable {
+                                pickerFor = sheet
+                                sheetState = null
+                            }
+                            .padding(horizontal = 14.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Начало отсчёта",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Ink.TextFaint
+                            )
+                            Text(
+                                text = sheet.startDate
+                                    ?.format(DateTimeFormatter.ofPattern("d MMMM yyyy", RU_LOCALE))
+                                    ?: "не задано",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = Ink.Text
+                            )
+                        }
+                        Text(
+                            text = "изменить",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Ink.Gold
+                        )
+                    }
+
                     Spacer(modifier = Modifier.height(22.dp))
                     if (sheet.slippedToday) {
                         OutlineButton(
@@ -279,6 +317,19 @@ fun TodayScreen(vm: AppViewModel) {
                     Spacer(modifier = Modifier.height(40.dp))
                 }
             }
+        }
+
+        val picker = pickerFor
+        if (picker != null) {
+            StartDateDialog(
+                title = "С какой даты считать «${picker.principle.title}»",
+                initial = picker.startDate,
+                onDismiss = { pickerFor = null },
+                onConfirm = { date ->
+                    vm.setStartDate(picker.principle.id, date)
+                    pickerFor = null
+                }
+            )
         }
     }
 }

@@ -379,3 +379,65 @@ fun OutlineButton(
         Text(text = text, style = MaterialTheme.typography.labelLarge, color = color)
     }
 }
+
+/** Прогресс до следующей вехи: неделя → месяц → 100 дней → год. */
+@Composable
+fun MilestoneBar(streak: Int, color: Color, modifier: Modifier = Modifier) {
+    val milestones = listOf(7, 30, 100, 365)
+    val next = milestones.firstOrNull { it > streak } ?: (((streak / 365) + 1) * 365)
+    val prev = milestones.lastOrNull { it <= streak } ?: 0
+    val fraction = if (next > prev) {
+        ((streak - prev).toFloat() / (next - prev)).coerceIn(0f, 1f)
+    } else {
+        0f
+    }
+    val animated by animateFloatAsState(
+        targetValue = fraction,
+        animationSpec = tween(durationMillis = 700, easing = FastOutSlowInEasing),
+        label = "milestone"
+    )
+    val label = when (next) {
+        7 -> "неделя"
+        30 -> "месяц"
+        100 -> "100 дней"
+        365 -> "год"
+        else -> "$next дней"
+    }
+
+    Column(modifier = modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = "$streak",
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.Bold,
+                color = color
+            )
+            Text(
+                text = "$next · $label",
+                style = MaterialTheme.typography.bodySmall,
+                color = Ink.TextFaint
+            )
+        }
+        Spacer(modifier = Modifier.height(6.dp))
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(8.dp)
+                .clip(CircleShape)
+                .background(Color.White.copy(alpha = 0.07f))
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(animated)
+                    .height(8.dp)
+                    .clip(CircleShape)
+                    .background(
+                        Brush.horizontalGradient(listOf(color, Ink.Gold))
+                    )
+            )
+        }
+    }
+}

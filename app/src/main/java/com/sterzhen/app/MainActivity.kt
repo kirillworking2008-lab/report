@@ -3,7 +3,13 @@ package com.sterzhen.app
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -76,11 +82,23 @@ class MainActivity : ComponentActivity() {
                 AuroraBackground {
                     Box(modifier = Modifier.fillMaxSize()) {
                         Box(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
-                            when (tab) {
-                                0 -> TodayScreen(vm)
-                                1 -> WeekScreen(vm)
-                                2 -> CoreScreen(vm)
-                                3 -> ReportsScreen(vm)
+                            AnimatedContent(
+                                targetState = tab,
+                                transitionSpec = {
+                                    (fadeIn(animationSpec = tween(260)) +
+                                        slideInVertically(
+                                            animationSpec = tween(260),
+                                            initialOffsetY = { it / 26 }
+                                        )) togetherWith fadeOut(animationSpec = tween(140))
+                                },
+                                label = "tab"
+                            ) { current ->
+                                when (current) {
+                                    0 -> TodayScreen(vm)
+                                    1 -> WeekScreen(vm)
+                                    2 -> CoreScreen(vm)
+                                    else -> ReportsScreen(vm)
+                                }
                             }
                         }
 

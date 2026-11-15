@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -39,12 +40,16 @@ import com.sterzhen.app.ui.components.SectionHeader
 import com.sterzhen.app.ui.components.StreakRing
 import com.sterzhen.app.ui.dayShortName
 import com.sterzhen.app.ui.theme.Ink
+import java.time.DayOfWeek
+import java.time.LocalDate
+import java.time.temporal.TemporalAdjusters
 
 @Composable
 fun ReportsScreen(vm: AppViewModel) {
     val today by vm.today.collectAsState()
     val tasks by vm.tasks.collectAsState()
     val slips by vm.slips.collectAsState()
+    val meta by vm.meta.collectAsState()
     val states by vm.principleStates.collectAsState()
 
     val totalDone = tasks.count { it.done }
@@ -59,6 +64,14 @@ fun ReportsScreen(vm: AppViewModel) {
         day to done
     }
     val peak = last7.maxOfOrNull { it.second }?.coerceAtLeast(1) ?: 1
+
+    // Карта дней: 12 недель по 7 дней, колонки — недели с понедельника.
+    val gridStart = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)).minusWeeks(11)
+    val weeks: List<List<LocalDate>> = (0 until 12).map { w ->
+        (0 until 7).map { d -> gridStart.plusDays((w * 7 + d).toLong()) }
+    }
+    val slipCountByDate = slips.groupBy { it.date }
+    val starts = meta.map { DateUtils.parse(it.startDate) }
 
     LazyColumn(
         modifier = Modifier
@@ -180,6 +193,36 @@ fun ReportsScreen(vm: AppViewModel) {
         }
 
         item {
+            GlassCard(modifier = Modifier.fillMaxWidth()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "КАРТА ДНЕЙ",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Ink.TextFaint,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Pill(text = "12 недель", color = Ink.Mint)
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                DayHeatmap(
+                    weeks = weeks,
+                    slipCountByDate = slipCountByDate,
+                    starts = starts,
+                    today = today
+                )
+                Spacer(modifier = Modifier.height(14.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                    HeatLegend(color = Ink.Mint.copy(alpha = 0.75f), label = "чисто")
+                    HeatLegend(color = Ink.Danger, label = "срыв")
+                    HeatLegend(color = Color.White.copy(alpha = 0.06f), label = "не отслеживалось")
+                }
+            }
+        }
+
+        item {
             Spacer(modifier = Modifier.height(4.dp))
             SectionHeader(
                 title = "Стержень по принципам",
@@ -258,5 +301,79 @@ private fun PrincipleReportRow(state: PrincipleState) {
                 color = Ink.TextFaint
             )
         }
+    }
+}
+
+@Composable
+private fun DayHeatmap(
+    weeks: List<List<LocalDate>>,
+    slipCountByDate: Map<String, List<*>>,
+    starts: List<LocalDate>,
+    today: LocalDate
+) {
+    Row(modifier = Modifier.fillMaxWidth()) {
+        // Подписи дней недели.
+        Column(modifier = Modifier.padding(end = 8.dp)) {
+            listOf("пн", "", "ср", "", "пт", "", "").forEach { label ->
+                Box(
+                    modifier = Modifier
+                        .height(18.dp)
+                        .width(18.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = label,
+                        fontSize = 9.sp,
+                        color = Ink.TextFaint
+                    )
+                }
+            }
+        }
+
+        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            weeks.forEach { week ->
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    week.forEach { day ->
+                        val key = DateUtils.format(day)
+                        val trackedCount = starts.count { it <= day }
+                        val slipsCount = slipCountByDate[key]?.size ?: 0
+                        val color = when {
+                            day > today -> Color.White.copy(alpha = 0.02f)
+                            trackedCount == 0 -> Color.White.copy(alpha = 0.05f)
+                            slipsCount > 0 -> Ink.Danger.copy(
+                                alpha = (0.45f + 0.12f * slipsCount).coerceAtMost(0.95f)
+                            )
+                            else -> Ink.Mint.copy(
+                                alpha = 0.18f + 0.09f * trackedCount.coerceAtMost(7)
+                            )
+                        }
+                        Box(
+                            modifier = Modifier
+                                .size(18.dp)
+                                .clip(RoundedCornerShape(4.dp))
+                                .background(color)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun HeatLegend(color: Color, label: String) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            modifier = Modifier
+                .size(9.dp)
+                .clip(RoundedCornerShape(2.dp))
+                .background(color)
+        )
+        Spacer(modifier = Modifier.width(5.dp))
+        Text(
+            text = label,
+            fontSize = 10.sp,
+            color = Ink.TextFaint
+        )
     }
 }

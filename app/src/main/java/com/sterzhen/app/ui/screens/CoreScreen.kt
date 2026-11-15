@@ -61,13 +61,17 @@ import com.sterzhen.app.ui.PrincipleState
 import com.sterzhen.app.ui.components.BigStreak
 import com.sterzhen.app.ui.components.DayStrip
 import com.sterzhen.app.ui.components.GlassCard
+import com.sterzhen.app.ui.components.MilestoneBar
+import com.sterzhen.app.ui.components.StartDateDialog
 import com.sterzhen.app.ui.components.OutlineButton
 import com.sterzhen.app.ui.components.Pill
 import com.sterzhen.app.ui.components.SectionHeader
 import com.sterzhen.app.ui.components.StreakRing
+import com.sterzhen.app.ui.RU_LOCALE
 import com.sterzhen.app.ui.theme.Ink
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.time.format.DateTimeFormatter
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.cos
@@ -97,6 +101,7 @@ fun CoreScreen(vm: AppViewModel) {
     var dragging by remember { mutableStateOf(false) }
     var animating by remember { mutableStateOf(false) }
     var autoRotate by remember { mutableStateOf(true) }
+    var showStartPicker by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
     val count = Principles.ALL.size
@@ -388,6 +393,9 @@ fun CoreScreen(vm: AppViewModel) {
                 )
             }
 
+            Spacer(modifier = Modifier.height(14.dp))
+            MilestoneBar(streak = frontState.currentStreak, color = accent)
+
             Spacer(modifier = Modifier.height(16.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -400,6 +408,37 @@ fun CoreScreen(vm: AppViewModel) {
                     color = Ink.TextFaint
                 )
                 DayStrip(days = frontState.lastDays)
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color.White.copy(alpha = 0.04f))
+                    .clickable { showStartPicker = true }
+                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Начало отсчёта",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Ink.TextFaint
+                    )
+                    Text(
+                        text = frontState.startDate
+                            ?.format(DateTimeFormatter.ofPattern("d MMMM yyyy", RU_LOCALE))
+                            ?: "не задано",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = Ink.Text
+                    )
+                }
+                Text(
+                    text = "изменить",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Ink.Gold
+                )
             }
 
             Spacer(modifier = Modifier.height(18.dp))
@@ -433,5 +472,17 @@ fun CoreScreen(vm: AppViewModel) {
             )
         }
         Spacer(modifier = Modifier.height(120.dp))
+    }
+
+    if (showStartPicker) {
+        StartDateDialog(
+            title = "С какой даты считать «${frontPrinciple.title}»",
+            initial = frontState.startDate,
+            onDismiss = { showStartPicker = false },
+            onConfirm = { date ->
+                vm.setStartDate(frontPrinciple.id, date)
+                showStartPicker = false
+            }
+        )
     }
 }
