@@ -44,10 +44,10 @@ object Principles {
             colorHex = 0xFF8E24AA
         ),
         Principle(
-            id = "procrastination",
-            title = "Без прокрастинации",
-            subtitle = "Делать, а не откладывать",
-            emoji = "⏳",
+            id = "smoking",
+            title = "Без курения",
+            subtitle = "Ни сигарет, ни вейпов",
+            emoji = "🚭",
             colorHex = 0xFF1E88E5
         ),
         Principle(
@@ -66,5 +66,11 @@ object Principles {
         )
     )
 
-    fun byId(id: String): Principle? = ALL.firstOrNull { it.id == id }
+    /** Старые идентификаторы, которые могли остаться в базе или в настройках виджета. */
+    private val LEGACY_IDS = mapOf("procrastination" to "smoking")
+
+    fun byId(id: String): Principle? {
+        val normalized = LEGACY_IDS[id] ?: id
+        return ALL.firstOrNull { it.id == normalized }
+    }
 }

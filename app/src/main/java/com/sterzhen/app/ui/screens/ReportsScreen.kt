@@ -86,7 +86,8 @@ fun ReportsScreen(vm: AppViewModel) {
             Spacer(modifier = Modifier.height(6.dp))
             Text(
                 text = "Твоя динамика",
-                style = MaterialTheme.typography.displayMedium
+                style = MaterialTheme.typography.displayMedium,
+                color = Ink.Ember
             )
         }
 

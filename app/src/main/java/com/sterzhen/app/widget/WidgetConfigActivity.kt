@@ -35,7 +35,9 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
+import com.sterzhen.app.R
 import com.sterzhen.app.data.Principles
 import com.sterzhen.app.ui.components.AuroraBackground
 import com.sterzhen.app.ui.components.OutlineButton
@@ -99,13 +101,14 @@ private fun WidgetConfigScreen(onPick: (String) -> Unit, onCancel: () -> Unit) {
     ) {
         Spacer(modifier = Modifier.height(24.dp))
         SectionHeader(
-            title = "Виджет «Огонёк»",
+            title = stringResource(R.string.widget_config_title),
             caption = "Выбери принцип — виджет будет показывать серию именно по нему"
         )
         Spacer(modifier = Modifier.height(6.dp))
         Text(
             text = "Какой огонёк показывать?",
-            style = MaterialTheme.typography.headlineMedium
+            style = MaterialTheme.typography.headlineMedium,
+            color = Ink.Ember
         )
 
         Spacer(modifier = Modifier.height(20.dp))

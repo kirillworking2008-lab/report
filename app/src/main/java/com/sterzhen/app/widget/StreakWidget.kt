@@ -71,19 +71,27 @@ object StreakWidget {
         val slipsByPrinciple = dao.slipsOnce().groupBy { it.principleId }
 
         ids.forEach { id ->
+            // Если принцип не выбран, раздаём их по кругу: первый виджет — алкоголь,
+            // второй — энергетики и т.д., вместо «всегда алкоголь».
+            val fallbackIndex = ids.indexOf(id).mod(Principles.ALL.size)
             val principle = Principles.byId(principleId(appContext, id) ?: "")
-                ?: Principles.ALL.first()
+                ?: Principles.ALL[fallbackIndex]
             val start = metaById[principle.id]?.let { DateUtils.parse(it.startDate) }
             val slips = slipsByPrinciple[principle.id]
                 .orEmpty()
                 .map { DateUtils.parse(it.date) }
                 .toSet()
             val streak = if (start != null) autoStreak(start, slips, today) else 0
-            manager.updateAppWidget(id, buildViews(appContext, principle, streak))
+            manager.updateAppWidget(id, buildViews(appContext, id, principle, streak))
         }
     }
 
-    private fun buildViews(context: Context, principle: Principle, streak: Int): RemoteViews {
+    private fun buildViews(
+        context: Context,
+        appWidgetId: Int,
+        principle: Principle,
+        streak: Int
+    ): RemoteViews {
         val views = RemoteViews(context.packageName, R.layout.widget_streak)
         views.setTextViewText(R.id.widget_emoji, if (streak > 0) principle.emoji else "🧊")
         views.setTextViewText(R.id.widget_name, principle.title)
@@ -100,15 +108,30 @@ object StreakWidget {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
         views.setOnClickPendingIntent(R.id.widget_root, pending)
+
+        // шестерёнка: открыть выбор принципа именно для этого виджета
+        val settings = Intent(context, WidgetConfigActivity::class.java).apply {
+            action = AppWidgetManager.ACTION_APPWIDGET_CONFIGURE
+            putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val settingsPending = PendingIntent.getActivity(
+            context,
+            1000 + appWidgetId,
+            settings,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        views.setOnClickPendingIntent(R.id.widget_settings, settingsPending)
         return views
     }
 
+    /** Цвета огонька из дизайн-кита Running v1.0. */
     private fun numberColor(streak: Int): Int = when {
-        streak >= 100 -> Color.parseColor("#FF2D55")
-        streak >= 30 -> Color.parseColor("#FF5722")
-        streak >= 7 -> Color.parseColor("#FF7A2F")
-        streak > 0 -> Color.parseColor("#FFC46B")
-        else -> Color.parseColor("#6EA8FF")
+        streak >= 100 -> Color.parseColor("#B9A4FF")  // violet
+        streak >= 30 -> Color.parseColor("#FFB376")   // amber
+        streak >= 7 -> Color.parseColor("#73E3CF")    // mint
+        streak > 0 -> Color.parseColor("#F4F7F8")     // ink
+        else -> Color.parseColor("#56636B")           // faint
     }
 
     // ---- будильник на полночь ----

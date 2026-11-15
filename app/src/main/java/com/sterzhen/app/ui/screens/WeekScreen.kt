@@ -97,7 +97,8 @@ fun WeekScreen(vm: AppViewModel) {
                     Text(
                         text = "${monday.format(DateTimeFormatter.ofPattern("d MMM", RU_LOCALE))} — " +
                             monday.plusDays(6).format(DateTimeFormatter.ofPattern("d MMMM", RU_LOCALE)),
-                        style = MaterialTheme.typography.headlineMedium
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = Ink.Ember
                     )
                 }
                 RoundIcon(text = "‹") { weekOffset -= 1 }

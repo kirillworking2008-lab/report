@@ -84,6 +84,13 @@ interface PrincipleDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertMeta(meta: PrincipleMetaEntity)
+
+    /** «Прокрастинация» переименована в «курение» — переносим историю срывов. */
+    @Query("UPDATE principle_slips SET principleId = 'smoking' WHERE principleId = 'procrastination'")
+    suspend fun migrateProcrastinationSlips()
+
+    @Query("UPDATE principle_meta SET principleId = 'smoking' WHERE principleId = 'procrastination'")
+    suspend fun migrateProcrastinationMeta()
 }
 
 @Database(

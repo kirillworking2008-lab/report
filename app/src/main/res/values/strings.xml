@@ -2,4 +2,6 @@
     <string name="app_name">Стержень</string>
     <string name="widget_label">Огонёк</string>
     <string name="widget_description">Огонёк по выбранному принципу — обновляется сам</string>
+    <string name="widget_settings_hint">Выбрать принцип для этого виджета</string>
+    <string name="widget_config_title">Принцип для виджета</string>
 </resources>

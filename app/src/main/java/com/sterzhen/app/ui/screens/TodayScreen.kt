@@ -178,7 +178,8 @@ fun TodayScreen(vm: AppViewModel) {
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
                         text = "Сегодня",
-                        style = MaterialTheme.typography.displayMedium
+                        style = MaterialTheme.typography.displayMedium,
+                        color = Ink.Ember
                     )
                 }
                 FlameBurst(streak = maxStreak, dimension = 62.dp)

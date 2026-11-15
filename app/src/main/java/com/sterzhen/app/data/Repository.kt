@@ -22,6 +22,10 @@ class Repository(private val db: AppDatabase) {
 
     /** Первый запуск: каждому принципу ставим точку отсчёта — сегодня. */
     suspend fun ensureSeeded() {
+        // переносим данные переименованного принципа, если они есть
+        db.principleDao().migrateProcrastinationSlips()
+        db.principleDao().migrateProcrastinationMeta()
+
         val existing = db.principleDao().metaOnce().map { it.principleId }.toSet()
         val today = DateUtils.format(LocalDate.now())
         Principles.ALL

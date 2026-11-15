@@ -1,9 +1,11 @@
 package com.sterzhen.app.ui.theme
 
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
@@ -160,7 +162,9 @@ private val AppTypography = Typography(
 fun SterzhenTheme(content: @Composable () -> Unit) {
     MaterialTheme(
         colorScheme = Scheme,
-        typography = AppTypography,
-        content = content
-    )
+        typography = AppTypography
+    ) {
+        // Без этого Text без явного цвета рисуется чёрным (дефолт LocalContentColor)
+        CompositionLocalProvider(LocalContentColor provides Ink.Text, content = content)
+    }
 }
