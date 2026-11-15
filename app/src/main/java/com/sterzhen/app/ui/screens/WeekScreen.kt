@@ -46,6 +46,7 @@ import com.sterzhen.app.ui.components.Pill
 import com.sterzhen.app.ui.components.SectionHeader
 import com.sterzhen.app.ui.dayShortName
 import com.sterzhen.app.ui.theme.Ink
+import com.sterzhen.app.ui.theme.Radii
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -126,13 +127,13 @@ fun WeekScreen(vm: AppViewModel) {
                     Column(
                         modifier = Modifier
                             .weight(1f)
-                            .clip(RoundedCornerShape(18.dp))
+                            .clip(RoundedCornerShape(13.dp))
                             .background(Brush.verticalGradient(accent))
                             .border(
                                 1.dp,
                                 if (isToday && !isSelected) Ink.Ember.copy(alpha = 0.45f)
                                 else Color.White.copy(alpha = 0.07f),
-                                RoundedCornerShape(18.dp)
+                                RoundedCornerShape(13.dp)
                             )
                             .clickable { selected = day }
                             .padding(vertical = 10.dp),
@@ -141,14 +142,14 @@ fun WeekScreen(vm: AppViewModel) {
                         Text(
                             text = dayShortName(day.dayOfWeek).take(2),
                             style = MaterialTheme.typography.bodySmall,
-                            color = if (isSelected) Color(0xFF1A0A02) else Ink.TextFaint
+                            color = if (isSelected) Color(0xFF101716) else Ink.TextFaint
                         )
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
                             text = "${day.dayOfMonth}",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            color = if (isSelected) Color(0xFF1A0A02) else Ink.Text
+                            color = if (isSelected) Color(0xFF101716) else Ink.Text
                         )
                         Spacer(modifier = Modifier.height(6.dp))
                         Box(
@@ -202,9 +203,9 @@ fun WeekScreen(vm: AppViewModel) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(24.dp))
+                        .clip(RoundedCornerShape(Radii.Card))
                         .background(Color.White.copy(alpha = 0.03f))
-                        .border(1.dp, Color.White.copy(alpha = 0.06f), RoundedCornerShape(24.dp))
+                        .border(1.dp, Color.White.copy(alpha = 0.06f), RoundedCornerShape(Radii.Card))
                         .padding(20.dp)
                 ) {
                     Text(
@@ -228,9 +229,9 @@ fun WeekScreen(vm: AppViewModel) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(22.dp))
+                    .clip(RoundedCornerShape(Radii.Card))
                     .background(Color.White.copy(alpha = 0.04f))
-                    .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(22.dp))
+                    .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(Radii.Card))
                     .padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -266,7 +267,7 @@ fun WeekScreen(vm: AppViewModel) {
                         text = "+",
                         fontSize = 22.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF190A02)
+                        color = Color(0xFF101716)
                     )
                 }
             }
@@ -315,9 +316,9 @@ private fun WeekTaskRow(task: TaskEntity, onToggle: () -> Unit, onDelete: () -> 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(22.dp))
+            .clip(RoundedCornerShape(Radii.Card))
             .background(Color.White.copy(alpha = 0.04f))
-            .border(1.dp, Color.White.copy(alpha = 0.06f), RoundedCornerShape(22.dp))
+            .border(1.dp, Color.White.copy(alpha = 0.06f), RoundedCornerShape(Radii.Card))
             .padding(horizontal = 14.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -334,7 +335,7 @@ private fun WeekTaskRow(task: TaskEntity, onToggle: () -> Unit, onDelete: () -> 
                 .clickable(onClick = onToggle),
             contentAlignment = Alignment.Center
         ) {
-            if (task.done) Text(text = "✓", fontSize = 13.sp, color = Color(0xFF06120C))
+            if (task.done) Text(text = "✓", fontSize = 13.sp, color = Color(0xFF101716))
         }
         Spacer(modifier = Modifier.width(12.dp))
         Text(

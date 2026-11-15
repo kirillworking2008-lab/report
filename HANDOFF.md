@@ -75,12 +75,18 @@ tools/preview_server.py     # отдаёт preview/ на $PORT, POST /upload?tok
 dist/sterzhen.apk           # APK от CI (мост CI → песочница)
 ```
 
-## 6. Дизайн-токены (текущие, «Ink»)
+## 6. Дизайн-токены (Running Design Kit v1.0)
 
-- Фон `#07070B`, карточка `#14141E`
-- Ember `#FF7A2F`, EmberDeep `#FF3D6E`, Gold `#FFC46B`, Mint `#4ADE9B`, Danger `#FF5566`, Ice `#6EA8FF`
-- Цвет числа серии `numberColor()`: ≥100 `#FF2D55`, ≥30 `#FF5722`, ≥7 `#FF7A2F`, >0 `#FFC46B`, 0 `#6EA8FF`
-- Радиусы: карточки карусели и `GlassCard` — **30 dp**
+Кит распакован в `design/running-design-kit/` (`theme.css`, `README.md`,
+`STARTER-PROMPT.md`, демо `index.html`).
+
+- Фон `#080D12`, каркас `#0D151B → #0A1117 → #091016`, панели `#16232A` / `#0E171D`
+- Текст `#F4F7F8` / `#849199` / `#56636B`
+- Стекло: панель `rgba(255,255,255,.045)`, рамка `rgba(255,255,255,.085)`, градиент 145°
+- Акценты: mint `#73E3CF` (основной), violet `#B9A4FF`, amber `#FFB376`, danger `#FF8484`
+- Цвет огонька `flameColor()`: ≥100 violet, ≥30 amber, ≥7 mint, >0 ink, 0 faint
+- Радиусы (`Radii`): карточка 17, поле 14, кнопка 16, герой/карусель 26, меню 30
+- Типографика: Inter/system-ui, метрики вес 680 и `-0.045em`, подписи 9sp uppercase
 - Карусель: шаг 51.43°, `rotationY = a % 360f`, наклон `rotationX = -9f`, `cameraDistance = 12f × density`, перспектива `0.74f + 0.26f × t`, `alpha = 0.16f + 0.84f × t`, `shadow((5 + 16t).dp)`, `zIndex(cosA)`, драг ×0.22f, тап при `cosA > 0.2f`, авто-вращение 0.14°/16 мс, `spring(0.82f, 260f)`; `BoxWithConstraints` высота 360 dp, карточка 150 × 196 dp, радиус кольца `width × 0.54f`.
 
 ## 7. Где сейчас код и APK
@@ -93,13 +99,15 @@ dist/sterzhen.apk           # APK от CI (мост CI → песочница)
 - Резервное зеркало: `https://gofile.io/d/l2wPBIMQ`
 - GitHub Release (у пользователя не открывается): `.../releases/download/latest/sterzhen-release.apk`
 
-## 8. Что НЕ сделано — главная открытая задача
+## 8. Статус дизайн-кита
 
-**Применить дизайн-кит `Running-Design-Kit.zip` с Google Drive.**
+**Дизайн-кит получен и применён.** `Running-Design-Kit.zip`
+(id `1uy-INcM7ey0A7ab5D-JGNE6yMyZrkCSQ`) скачан через коннектор google_drive,
+распакован в `design/running-design-kit/`, токены перенесены в
+`ui/theme/Theme.kt`, `ui/components/Design.kt`, экраны и `preview/index.html`.
 
-Состояние: файла нет в песочнице, ссылок на него у агента нет (в сообщениях были битые `http://running-design-kit.zip/` — это не адрес Drive). Коннектор **google_drive** подключён у пользователя, но **выключен для чата** — доступа к инструментам нет.
-
-Когда файл появится — нужно: распаковать, вытащить палитру, типографику (шрифты, размеры, веса), радиусы, отступы, тени и перенести в `ui/theme/Theme.kt`, `ui/components/Design.kt`, `preview/index.html`; затем пересобрать APK и обновить ссылку.
+Что осталось по вкусу: проверить на устройстве, при необходимости подкрутить
+контраст подписей и размеры текста на карточках карусели.
 
 ## 9. Как дать агенту доступ к приложению (в новом чате)
 

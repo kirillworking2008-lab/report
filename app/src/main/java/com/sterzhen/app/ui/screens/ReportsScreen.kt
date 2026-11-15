@@ -40,6 +40,7 @@ import com.sterzhen.app.ui.components.SectionHeader
 import com.sterzhen.app.ui.components.StreakRing
 import com.sterzhen.app.ui.dayShortName
 import com.sterzhen.app.ui.theme.Ink
+import com.sterzhen.app.ui.theme.Radii
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.temporal.TemporalAdjusters
@@ -244,7 +245,7 @@ private fun MetricCard(
     unit: String,
     color: Color
 ) {
-    GlassCard(modifier = modifier, shape = RoundedCornerShape(24.dp)) {
+    GlassCard(modifier = modifier, shape = RoundedCornerShape(Radii.Card)) {
         Text(
             text = title,
             style = MaterialTheme.typography.labelSmall,
@@ -266,9 +267,9 @@ private fun PrincipleReportRow(state: PrincipleState) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(24.dp))
+            .clip(RoundedCornerShape(Radii.Card))
             .background(Color.White.copy(alpha = 0.035f))
-            .border(1.dp, Color.White.copy(alpha = 0.06f), RoundedCornerShape(24.dp))
+            .border(1.dp, Color.White.copy(alpha = 0.06f), RoundedCornerShape(Radii.Card))
             .padding(horizontal = 14.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {

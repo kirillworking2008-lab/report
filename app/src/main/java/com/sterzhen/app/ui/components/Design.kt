@@ -49,14 +49,18 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sterzhen.app.ui.theme.Ink
+import com.sterzhen.app.ui.theme.Radii
 
-/** Цвет огонька по длине серии. */
+/**
+ * Цвет огонька по длине серии — только акценты дизайн-кита:
+ * холодный faint → ink → mint → amber → violet.
+ */
 fun flameColor(streak: Int): Color = when {
-    streak >= 100 -> Color(0xFFFF2D55)
-    streak >= 30 -> Color(0xFFFF5722)
-    streak >= 7 -> Ink.Ember
-    streak > 0 -> Ink.Gold
-    else -> Ink.Ice
+    streak >= 100 -> Ink.Violet
+    streak >= 30 -> Ink.Gold
+    streak >= 7 -> Ink.Mint
+    streak > 0 -> Ink.Text
+    else -> Ink.TextFaint
 }
 
 /** Живой фон: медленно дрейфующие цветные пятна. */
@@ -78,7 +82,7 @@ fun AuroraBackground(content: @Composable BoxScope.() -> Unit) {
             val r1 = size.maxDimension * 0.75f
             drawCircle(
                 brush = Brush.radialGradient(
-                    colors = listOf(Ink.Ember.copy(alpha = 0.20f), Color.Transparent),
+                    colors = listOf(Ink.Ember.copy(alpha = 0.075f), Color.Transparent),
                     center = Offset(size.width * (0.10f + 0.30f * t), size.height * 0.06f),
                     radius = r1
                 ),
@@ -88,7 +92,7 @@ fun AuroraBackground(content: @Composable BoxScope.() -> Unit) {
             val r2 = size.maxDimension * 0.65f
             drawCircle(
                 brush = Brush.radialGradient(
-                    colors = listOf(Ink.EmberDeep.copy(alpha = 0.14f), Color.Transparent),
+                    colors = listOf(Ink.Violet.copy(alpha = 0.05f), Color.Transparent),
                     center = Offset(size.width * (1.05f - 0.25f * t), size.height * 0.45f),
                     radius = r2
                 ),
@@ -98,7 +102,7 @@ fun AuroraBackground(content: @Composable BoxScope.() -> Unit) {
             val r3 = size.maxDimension * 0.7f
             drawCircle(
                 brush = Brush.radialGradient(
-                    colors = listOf(Ink.Ice.copy(alpha = 0.10f), Color.Transparent),
+                    colors = listOf(Ink.Gold.copy(alpha = 0.045f), Color.Transparent),
                     center = Offset(size.width * (0.2f + 0.5f * (1f - t)), size.height * 1.0f),
                     radius = r3
                 ),
@@ -114,7 +118,7 @@ fun AuroraBackground(content: @Composable BoxScope.() -> Unit) {
 @Composable
 fun GlassCard(
     modifier: Modifier = Modifier,
-    shape: RoundedCornerShape = RoundedCornerShape(30.dp),
+    shape: RoundedCornerShape = RoundedCornerShape(Radii.Card),
     glow: Color? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
@@ -122,20 +126,32 @@ fun GlassCard(
         modifier = modifier
             .clip(shape)
             .background(Brush.verticalGradient(listOf(Ink.CardHi, Ink.Card)))
+            // стекло кита: linear-gradient(145deg, rgba(255,255,255,.055), rgba(255,255,255,.022))
             .background(
-                Brush.verticalGradient(
-                    0f to Color.White.copy(alpha = 0.07f),
-                    0.55f to Color.White.copy(alpha = 0.015f),
-                    1f to Color.Transparent
+                Brush.linearGradient(
+                    listOf(
+                        Color.White.copy(alpha = 0.055f),
+                        Color.White.copy(alpha = 0.022f)
+                    )
+                )
+            )
+            // точечное свечение акцента в углу, если задано
+            .background(
+                if (glow == null) Brush.linearGradient(
+                    listOf(Color.Transparent, Color.Transparent)
+                ) else Brush.radialGradient(
+                    colors = listOf(glow.copy(alpha = 0.10f), Color.Transparent),
+                    center = Offset(0f, 0f),
+                    radius = 520f
                 )
             )
             .border(
                 1.dp,
                 Brush.verticalGradient(
                     listOf(
-                        (glow ?: Color.White).copy(alpha = 0.30f),
-                        Color.White.copy(alpha = 0.05f),
-                        Color.White.copy(alpha = 0.02f)
+                        Color.White.copy(alpha = 0.16f),          // внутренняя светлая линия
+                        (glow ?: Color.White).copy(alpha = 0.10f),
+                        Color.White.copy(alpha = 0.05f)
                     )
                 ),
                 shape
@@ -285,7 +301,7 @@ fun DayStrip(days: List<Boolean?>, modifier: Modifier = Modifier, barHeight: Dp 
         days.forEachIndexed { index, day ->
             val isLast = index == days.lastIndex
             val color = when (day) {
-                true -> if (isLast) Ink.Mint else Ink.Mint.copy(alpha = 0.55f)
+                true -> if (isLast) Ink.Mint else Ink.Mint.copy(alpha = 0.45f)
                 false -> Ink.Danger
                 null -> Color.White.copy(alpha = 0.07f)
             }
@@ -323,9 +339,9 @@ fun Pill(text: String, color: Color, modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .clip(CircleShape)
-            .background(color.copy(alpha = 0.15f))
-            .border(1.dp, color.copy(alpha = 0.35f), CircleShape)
-            .padding(horizontal = 10.dp, vertical = 5.dp)
+            .background(color.copy(alpha = 0.10f))
+            .border(1.dp, color.copy(alpha = 0.30f), CircleShape)
+            .padding(horizontal = 12.dp, vertical = 6.dp)
     ) {
         Text(
             text = text,
@@ -346,16 +362,17 @@ fun GlowButton(
 ) {
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(20.dp))
-            .background(Brush.horizontalGradient(colors))
+            .clip(RoundedCornerShape(Radii.Button))
+            .background(Brush.linearGradient(colors))
+            .border(1.dp, Color.White.copy(alpha = 0.16f), RoundedCornerShape(Radii.Button))
             .clickable(onClick = onClick)
-            .padding(vertical = 16.dp),
+            .padding(vertical = 17.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = text,
             style = MaterialTheme.typography.labelLarge,
-            color = Color(0xFF190A02)
+            color = Color(0xFF101716)
         )
     }
 }
@@ -370,8 +387,9 @@ fun OutlineButton(
 ) {
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(18.dp))
-            .border(1.dp, color.copy(alpha = 0.4f), RoundedCornerShape(18.dp))
+            .clip(RoundedCornerShape(13.dp))
+            .background(Color.White.copy(alpha = 0.035f))
+            .border(1.dp, color.copy(alpha = 0.28f), RoundedCornerShape(13.dp))
             .clickable(onClick = onClick)
             .padding(vertical = 13.dp),
         contentAlignment = Alignment.Center
@@ -435,7 +453,7 @@ fun MilestoneBar(streak: Int, color: Color, modifier: Modifier = Modifier) {
                     .height(8.dp)
                     .clip(CircleShape)
                     .background(
-                        Brush.horizontalGradient(listOf(color, Ink.Gold))
+                        Brush.horizontalGradient(listOf(color, color.copy(alpha = 0.78f)))
                     )
             )
         }

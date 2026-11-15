@@ -6,36 +6,42 @@
 <title>Стержень — превью дизайна</title>
 <style>
   :root{
-    --bg:#07070B; --card:#14141E; --cardhi:#1D1D2A;
-    --text:#F7F7FA; --dim:#9C9CAC; --faint:#5C5C6B;
-    --ember:#FF7A2F; --ember-deep:#FF3D6E; --gold:#FFC46B;
-    --mint:#4ADE9B; --danger:#FF5566; --ice:#6EA8FF;
+    /* Running Design System v1.0 */
+    --bg:#080D12; --card:#0E171D; --cardhi:#16232A;
+    --text:#F4F7F8; --dim:#849199; --faint:#56636B;
+    --panel:rgba(255,255,255,.045); --stroke:rgba(255,255,255,.085);
+    --accent:#73E3CF; --accent-rgb:115,227,207; --accent-deep:#173B3B;
+    --violet:#B9A4FF; --amber:#FFB376; --danger:#FF8484;
+    /* legacy-алиасы */
+    --ember:var(--accent); --ember-deep:var(--violet); --gold:var(--amber);
+    --mint:var(--accent); --ice:var(--dim);
+    --r-card:17px; --r-field:14px; --r-button:16px; --r-hero:26px; --r-menu:30px;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;height:100%}
   body{
     background:var(--bg); color:var(--text); overflow:hidden;
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
     display:flex; align-items:center; justify-content:center; gap:56px;
   }
   .aurora{position:fixed;inset:0;z-index:0;overflow:hidden}
-  .blob{position:absolute;border-radius:50%;filter:blur(90px);opacity:.55}
-  .b1{width:620px;height:620px;left:-140px;top:-220px;background:radial-gradient(circle,rgba(255,122,47,.42),transparent 65%);animation:drift1 22s ease-in-out infinite alternate}
-  .b2{width:560px;height:560px;right:-160px;top:20%;background:radial-gradient(circle,rgba(255,61,110,.34),transparent 65%);animation:drift2 26s ease-in-out infinite alternate}
-  .b3{width:600px;height:600px;left:20%;bottom:-260px;background:radial-gradient(circle,rgba(110,168,255,.24),transparent 65%);animation:drift3 30s ease-in-out infinite alternate}
+  .blob{position:absolute;border-radius:50%;filter:blur(90px);opacity:.9}
+  .b1{width:620px;height:620px;left:-140px;top:-220px;background:radial-gradient(circle,rgba(var(--accent-rgb),.16),transparent 65%);animation:drift1 22s ease-in-out infinite alternate}
+  .b2{width:560px;height:560px;right:-160px;top:20%;background:radial-gradient(circle,rgba(185,164,255,.12),transparent 65%);animation:drift2 26s ease-in-out infinite alternate}
+  .b3{width:600px;height:600px;left:20%;bottom:-260px;background:radial-gradient(circle,rgba(255,179,118,.10),transparent 65%);animation:drift3 30s ease-in-out infinite alternate}
   @keyframes drift1{to{transform:translate(90px,60px) scale(1.1)}}
   @keyframes drift2{to{transform:translate(-70px,90px) scale(1.05)}}
   @keyframes drift3{to{transform:translate(60px,-70px) scale(1.1)}}
 
   .hero{position:relative;z-index:2;max-width:290px}
   .hero h1{font-size:40px;line-height:1.02;letter-spacing:-1.6px;margin:0 0 14px}
-  .hero h1 span{background:linear-gradient(120deg,var(--ember),var(--ember-deep));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .hero h1 span{background:linear-gradient(120deg,var(--accent),var(--violet));-webkit-background-clip:text;background-clip:text;color:transparent}
   .hero p{color:var(--dim);font-size:14px;line-height:1.55;margin:0 0 10px}
   .hero .tag{display:inline-block;font-size:10px;letter-spacing:1.6px;font-weight:700;color:var(--faint);border:1px solid rgba(255,255,255,.1);padding:5px 10px;border-radius:999px;margin-bottom:18px}
   .hero ul{color:var(--dim);font-size:13px;line-height:1.8;padding-left:18px;margin:0}
   .dl{display:inline-block;margin:0 0 16px;padding:12px 18px;border-radius:16px;text-decoration:none;
-    font-size:13px;font-weight:800;color:#190A02;background:linear-gradient(135deg,var(--ember),var(--ember-deep));
-    box-shadow:0 12px 30px rgba(255,61,110,.35)}
+    font-size:13px;font-weight:760;color:#101716;background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 96%,white 4%),color-mix(in srgb,var(--accent) 84%,white 16%));
+    border:1px solid rgba(255,255,255,.16);box-shadow:0 8px 25px rgba(var(--accent-rgb),.15)}
   .wrow{display:flex;align-items:center;gap:12px;margin:18px 0}
   .w2{width:158px;height:62px;border-radius:18px;flex:0 0 auto;
     background:linear-gradient(180deg,#1D1D2A,#111119);border:1px solid rgba(255,255,255,.18);
@@ -49,7 +55,7 @@
   /* ---------- phone ---------- */
   .phone{
     position:relative;z-index:2;width:390px;height:812px;border-radius:46px;
-    background:#0A0A11;border:1px solid rgba(255,255,255,.1);
+    background:linear-gradient(180deg,#0D151B 0%,#0A1117 42%,#091016 100%);border:1px solid rgba(255,255,255,.085);
     box-shadow:0 40px 120px rgba(0,0,0,.75), inset 0 0 0 1px rgba(255,255,255,.03);
     overflow:hidden;display:flex;flex-direction:column;
   }
@@ -63,25 +69,25 @@
   .row{display:flex;align-items:center;gap:12px}
   .between{justify-content:space-between}
   .card{
-    border-radius:28px;padding:18px;
-    background:linear-gradient(180deg,var(--cardhi),var(--card));
-    border:1px solid rgba(255,255,255,.08);
-    box-shadow:0 1px 0 rgba(255,255,255,.06) inset, 0 18px 40px rgba(0,0,0,.35);
+    border-radius:var(--r-card);padding:18px;
+    background:linear-gradient(145deg,rgba(255,255,255,.055),rgba(255,255,255,.022)),linear-gradient(180deg,var(--cardhi),var(--card));
+    border:1px solid var(--stroke);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.10), 0 18px 40px rgba(0,0,0,.35);
     position:relative;overflow:hidden;
   }
   .card.glow::after{content:"";position:absolute;inset:-40% -20% auto;height:160px;
-    background:radial-gradient(60% 100% at 50% 0,rgba(255,122,47,.28),transparent 70%);pointer-events:none}
+    background:radial-gradient(60% 100% at 50% 0,rgba(var(--accent-rgb),.16),transparent 70%);pointer-events:none}
   .bignum{font-size:56px;font-weight:900;letter-spacing:-3px;line-height:.9;
     background:linear-gradient(180deg,#fff,rgba(255,255,255,.45));-webkit-background-clip:text;background-clip:text;color:transparent}
-  .flame{font-size:34px;filter:drop-shadow(0 0 18px rgba(255,122,47,.65));animation:pulse 1.6s ease-in-out infinite alternate}
+  .flame{font-size:34px;filter:drop-shadow(0 0 18px rgba(var(--accent-rgb),.65));animation:pulse 1.6s ease-in-out infinite alternate}
   @keyframes pulse{from{transform:scale(.93)}to{transform:scale(1.08)}}
   .stat{display:flex;flex-direction:column;gap:2px}
   .stat b{font-size:16px}
   .stat span{font-size:11px;color:var(--faint)}
 
-  .pr{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:24px;
-    background:linear-gradient(90deg,rgba(255,255,255,.07),rgba(255,255,255,.03));
-    border:1px solid rgba(255,255,255,.07);cursor:pointer;transition:transform .15s ease}
+  .pr{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:var(--r-card);
+    background:linear-gradient(145deg,rgba(255,255,255,.055),rgba(255,255,255,.022));
+    border:1px solid var(--stroke);cursor:pointer;transition:transform .15s ease}
   .pr:active{transform:scale(.985)}
   .ring{position:relative;width:44px;height:44px;flex:0 0 auto;display:grid;place-items:center}
   .ring svg{position:absolute;inset:0;transform:rotate(-90deg)}
@@ -91,32 +97,32 @@
   .pr .t span{font-size:11px;color:var(--faint)}
   .pill{font-size:11px;font-weight:700;padding:5px 10px;border-radius:999px;border:1px solid;white-space:nowrap}
 
-  .task{display:flex;align-items:center;gap:12px;padding:14px;border-radius:22px;
-    background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);font-size:14px}
-  .check{width:24px;height:24px;border-radius:50%;border:1.5px solid rgba(255,255,255,.25);display:grid;place-items:center;flex:0 0 auto;font-size:12px;color:#06120C}
+  .task{display:flex;align-items:center;gap:12px;padding:14px;border-radius:var(--r-card);
+    background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);font-size:14px}
+  .check{width:24px;height:24px;border-radius:50%;border:1.5px solid rgba(255,255,255,.25);display:grid;place-items:center;flex:0 0 auto;font-size:12px;color:#101716}
   .check.on{background:var(--mint);border-color:var(--mint)}
   .task.done{color:var(--faint);text-decoration:line-through}
-  .addtask{display:flex;align-items:center;gap:10px;padding:8px 8px 8px 16px;border-radius:22px;
+  .addtask{display:flex;align-items:center;gap:10px;padding:8px 8px 8px 16px;border-radius:var(--r-field);
     background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);color:var(--faint);font-size:14px}
   .plus{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font-size:22px;font-weight:800;
-    background:linear-gradient(135deg,var(--ember),var(--ember-deep));color:#190A02;margin-left:auto}
+    background:linear-gradient(135deg,var(--accent),var(--ember-deep));color:#101716;margin-left:auto}
 
   /* ---------- 3D carousel ---------- */
   .stage{position:relative;height:392px;margin:6px -16px 0;perspective:1200px;perspective-origin:50% 45%;overflow:hidden}
   .stage .glow{position:absolute;left:50%;top:58%;width:340px;height:340px;transform:translate(-50%,-50%);
-    background:radial-gradient(circle,rgba(255,122,47,.24),transparent 62%);filter:blur(6px);pointer-events:none}
+    background:radial-gradient(circle,rgba(var(--accent-rgb),.18),transparent 62%);filter:blur(6px);pointer-events:none}
   .ring3d{position:absolute;left:50%;top:50%;width:0;height:0;transform-style:preserve-3d;
     transform:translate(-50%,-50%) rotateX(-9deg) rotateY(0deg);cursor:grab}
   .ring3d.dragging{cursor:grabbing}
-  .cc{position:absolute;width:150px;height:198px;left:-75px;top:-99px;border-radius:30px;padding:15px;
+  .cc{position:absolute;width:150px;height:198px;left:-75px;top:-99px;border-radius:var(--r-hero);padding:15px;
     display:flex;flex-direction:column;align-items:center;text-align:center;
-    border:1px solid rgba(255,255,255,.14);transform-style:preserve-3d;
+    border:1px solid rgba(255,255,255,.14);background:linear-gradient(180deg,var(--cardhi),var(--card));transform-style:preserve-3d;
     box-shadow:0 28px 56px rgba(0,0,0,.55), 0 10px 22px rgba(0,0,0,.35);transition:box-shadow .3s}
-  .cc::after{content:'';position:absolute;inset:0;border-radius:30px;pointer-events:none;
-    background:radial-gradient(72% 52% at 26% 6%,rgba(255,255,255,.26),transparent 72%)}
-  .cc .ico{width:46px;height:46px;border-radius:50%;background:rgba(255,255,255,.18);display:grid;place-items:center;font-size:22px}
-  .cc .ttl{font-size:13px;font-weight:700;line-height:1.2;margin-top:10px;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.35)}
-  .cc .streak{margin-top:auto;font-size:18px;font-weight:900;color:#fff}
+  .cc::after{content:'';position:absolute;inset:0;border-radius:var(--r-hero);pointer-events:none;
+    background:radial-gradient(72% 52% at 26% 6%,rgba(255,255,255,.18),transparent 72%),linear-gradient(145deg,rgba(255,255,255,.055),rgba(255,255,255,.022))}
+  .cc .ico{width:46px;height:46px;border-radius:50%;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.12);display:grid;place-items:center;font-size:22px}
+  .cc .ttl{font-size:13px;font-weight:700;line-height:1.2;margin-top:10px;color:var(--text);text-shadow:0 2px 8px rgba(0,0,0,.35)}
+  .cc .streak{margin-top:auto;font-size:18px;font-weight:680;letter-spacing:-.5px;color:var(--text)}
   .cc .streak small{font-size:10px;font-weight:600;opacity:.8;display:block}
   .dots{display:flex;justify-content:center;gap:6px;margin:14px 0 16px}
   .dots i{width:6px;height:6px;border-radius:99px;background:rgba(255,255,255,.16);transition:all .3s}
@@ -134,7 +140,7 @@
   .heat .labels span{height:18px;font-size:9px;color:var(--faint);display:flex;align-items:center}
   .heat .col{display:flex;flex-direction:column;gap:4px}
   .heat .c{width:18px;height:18px;border-radius:4px;background:rgba(255,255,255,.05)}
-  .heat .c.clean{background:rgba(74,222,155,.6)}
+  .heat .c.clean{background:rgba(var(--accent-rgb),.6)}
   .heat .c.slip{background:var(--danger)}
   .heat .c.future{background:rgba(255,255,255,.02)}
   .legend{display:flex;gap:14px;margin-top:14px;font-size:10px;color:var(--faint)}
@@ -149,8 +155,8 @@
   .cal div{text-align:center;font-size:12px;padding:8px 0;border-radius:10px;color:var(--dim)}
   .cal div.h{font-size:9px;color:var(--faint);letter-spacing:.5px;padding:4px 0}
   .cal div.mut{color:rgba(255,255,255,.18)}
-  .cal div.sel{background:var(--ember);color:#1A0A02;font-weight:800}
-  .cal div.today{box-shadow:inset 0 0 0 1px rgba(255,196,107,.65);color:var(--gold)}
+  .cal div.sel{background:var(--ember);color:#101716;font-weight:800}
+  .cal div.today{box-shadow:inset 0 0 0 1px rgba(255,179,118,.65);color:var(--gold)}
   .calhead{display:flex;align-items:center;justify-content:space-between;margin-top:6px}
   .calhead b{font-size:15px}
 
@@ -158,8 +164,8 @@
   .days{display:flex;gap:6px}
   .day{flex:1;border-radius:18px;padding:10px 0;display:flex;flex-direction:column;align-items:center;gap:3px;
     background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.03));border:1px solid rgba(255,255,255,.07)}
-  .day.on{background:linear-gradient(180deg,var(--ember),var(--ember-deep));border-color:transparent;color:#1A0A02}
-  .day.on .dow,.day.on .num{color:#1A0A02}
+  .day.on{background:linear-gradient(180deg,var(--ember),var(--ember-deep));border-color:transparent;color:#101716}
+  .day.on .dow,.day.on .num{color:#101716}
   .day .dow{font-size:10px;color:var(--faint);text-transform:uppercase;letter-spacing:.6px}
   .day .num{font-size:15px;font-weight:700}
   .day .dot{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.2)}
@@ -171,11 +177,11 @@
   .metric span{font-size:11px;color:var(--dim)}
   .bars{display:flex;align-items:flex-end;justify-content:space-between;height:150px;margin-top:16px}
   .bar{display:flex;flex-direction:column;align-items:center;gap:6px;width:26px}
-  .bar i{width:26px;border-radius:10px;background:linear-gradient(180deg,rgba(255,122,47,.55),rgba(255,61,110,.25))}
+  .bar i{width:26px;border-radius:10px;background:linear-gradient(180deg,rgba(var(--accent-rgb),.55),rgba(255,61,110,.25))}
   .bar.today i{background:linear-gradient(180deg,var(--ember),var(--ember-deep))}
   .bar span{font-size:10px;color:var(--faint)}
   .strip{display:flex;gap:4px;align-items:flex-end}
-  .strip i{width:5px;height:16px;border-radius:3px;background:rgba(74,222,155,.55)}
+  .strip i{width:5px;height:16px;border-radius:3px;background:rgba(var(--accent-rgb),.55)}
   .strip i.last{width:7px;height:20px;background:var(--mint)}
   .strip i.bad{background:var(--danger)}
 
@@ -188,8 +194,8 @@
     display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
     font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .22s}
   .nav button svg{width:22px;height:22px;fill:currentColor}
-  .nav button.on{color:var(--gold);background:linear-gradient(180deg,rgba(255,122,47,.22),transparent)}
-  .nav button.on svg{filter:drop-shadow(0 0 8px rgba(255,122,47,.6))}
+  .nav button.on{color:var(--gold);background:linear-gradient(180deg,rgba(var(--accent-rgb),.22),transparent)}
+  .nav button.on svg{filter:drop-shadow(0 0 8px rgba(var(--accent-rgb),.6))}
 
   .sheet{position:absolute;left:0;right:0;bottom:0;z-index:9;background:var(--card);
     border-radius:28px 28px 0 0;padding:20px;transform:translateY(110%);transition:transform .3s cubic-bezier(.22,1,.36,1);
@@ -199,7 +205,7 @@
   .scrim.on{opacity:1;pointer-events:auto}
   .btn{width:100%;border:0;border-radius:18px;padding:15px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;margin-top:10px}
   .btn.danger{background:linear-gradient(135deg,var(--danger),#C22B4A);color:#2A0710}
-  .btn.ghost{background:transparent;border:1px solid rgba(74,222,155,.4);color:var(--mint)}
+  .btn.ghost{background:transparent;border:1px solid rgba(var(--accent-rgb),.4);color:var(--mint)}
   .ghostlink{color:var(--faint);font-size:12px}
 
   @media (max-width:900px){ .hero{display:none} body{gap:0} }
@@ -215,8 +221,8 @@
   <p>Интерактивный макет: стержень теперь на «Сегодня» — крути 3D-карусель мышью.</p>
   <div class="wrow">
     <div style="display:flex;flex-direction:column;gap:8px">
-      <div class="w2"><span class="we">🍺</span><div><div class="wl">Без алкоголя</div><div class="wn2" style="color:#FF7A2F">128</div></div></div>
-      <div class="w2"><span class="we">📱</span><div><div class="wl">Без рилсов</div><div class="wn2" style="color:#FFC46B">7</div></div></div>
+      <div class="w2"><span class="we">🍺</span><div><div class="wl">Без алкоголя</div><div class="wn2" style="color:#73E3CF">128</div></div></div>
+      <div class="w2"><span class="we">📱</span><div><div class="wl">Без рилсов</div><div class="wn2" style="color:#FFB376">7</div></div></div>
     </div>
     <div class="wt"><b style="color:#F7F7FA">Виджеты 2×1</b><br>по одному на принцип:<br>подпись + огонёк</div>
   </div>
@@ -261,7 +267,7 @@
           <div class="label">Стержень</div>
           <h2 class="big">7 принципов</h2>
         </div>
-        <div class="pill" style="color:var(--ember);border-color:rgba(255,122,47,.4);background:rgba(255,122,47,.12)">128 дн.</div>
+        <div class="pill" style="color:var(--ember);border-color:rgba(var(--accent-rgb),.4);background:rgba(var(--accent-rgb),.12)">128 дн.</div>
       </div>
       <div style="font-size:11px;color:var(--faint);margin-top:6px">Крути карусель · нажми на карточку, чтобы вынести её вперёд</div>
 
@@ -274,7 +280,7 @@
       <div class="card glow">
         <div class="row">
           <div class="ring" style="width:54px;height:54px">
-            <svg viewBox="0 0 54 54"><circle cx="27" cy="27" r="24" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="3.5"/><circle cx="27" cy="27" r="24" fill="none" stroke="url(#g1)" stroke-width="3.5" stroke-linecap="round" stroke-dasharray="151" stroke-dashoffset="40"/><defs><linearGradient id="g1"><stop offset="0" stop-color="#FFC46B"/><stop offset="1" stop-color="#FF7A2F"/></linearGradient></defs></svg>
+            <svg viewBox="0 0 54 54"><circle cx="27" cy="27" r="24" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="3.5"/><circle cx="27" cy="27" r="24" fill="none" stroke="url(#g1)" stroke-width="3.5" stroke-linecap="round" stroke-dasharray="151" stroke-dashoffset="40"/><defs><linearGradient id="g1"><stop offset="0" stop-color="#FFB376"/><stop offset="1" stop-color="#73E3CF"/></linearGradient></defs></svg>
             <div class="e" id="detEmoji">🍺</div>
           </div>
           <div style="flex:1">
@@ -282,12 +288,12 @@
             <div style="font-size:11px;color:var(--faint)" id="detSub">Ни капли спиртного</div>
           </div>
           <div style="text-align:right">
-            <div class="bignum" style="font-size:40px;background:linear-gradient(180deg,#FF7A2F,rgba(255,122,47,.5));-webkit-background-clip:text;background-clip:text" id="detNum">128</div>
+            <div class="bignum" style="font-size:40px;background:linear-gradient(180deg,#73E3CF,rgba(var(--accent-rgb),.5));-webkit-background-clip:text;background-clip:text" id="detNum">128</div>
             <div style="font-size:10px;color:var(--faint)">дней</div>
           </div>
         </div>
         <div class="row" style="gap:8px;margin-top:16px">
-          <div class="pill" style="color:var(--gold);border-color:rgba(255,196,107,.4);background:rgba(255,196,107,.12)">рекорд 128</div>
+          <div class="pill" style="color:var(--gold);border-color:rgba(255,179,118,.4);background:rgba(255,179,118,.12)">рекорд 128</div>
           <div class="pill" style="color:var(--dim);border-color:rgba(255,255,255,.15);background:rgba(255,255,255,.05)">до 30 дней: 0</div>
         </div>
         <div class="mile">
@@ -304,7 +310,7 @@
           <div class="l"><span>Начало отсчёта</span><b id="dateStart">12 апреля 2025</b></div>
           <em>изменить</em>
         </div>
-        <button class="btn ghost" style="margin-top:18px;border-color:rgba(255,85,102,.45);color:var(--danger)">Сообщить о срыве</button>
+        <button class="btn ghost" style="margin-top:18px;border-color:rgba(255,132,132,.45);color:var(--danger)">Сообщить о срыве</button>
       </div>
       <div style="text-align:center;font-size:11px;color:var(--faint);margin-top:14px">Держишься — просто живи. Огонёк растёт сам.</div>
 
@@ -336,7 +342,7 @@
       <div class="day"><span class="dow">ср</span><span class="num">12</span><i class="dot" style="background:var(--mint)"></i></div>
       <div class="day"><span class="dow">чт</span><span class="num">13</span><i class="dot" style="background:var(--danger)"></i></div>
       <div class="day"><span class="dow">пт</span><span class="num">14</span><i class="dot" style="background:var(--mint)"></i></div>
-      <div class="day on"><span class="dow">сб</span><span class="num">15</span><i class="dot" style="background:#1A0A02"></i></div>
+      <div class="day on"><span class="dow">сб</span><span class="num">15</span><i class="dot" style="background:#101716"></i></div>
       <div class="day"><span class="dow">вс</span><span class="num">16</span><i class="dot"></i></div>
     </div>
 
@@ -350,7 +356,7 @@
 
     <div class="row between" style="margin:20px 2px 10px">
       <div style="font-size:17px;font-weight:700">Суббота, 15 ноября</div>
-      <div class="pill" style="color:var(--mint);border-color:rgba(74,222,155,.4);background:rgba(74,222,155,.12)">без срывов</div>
+      <div class="pill" style="color:var(--mint);border-color:rgba(var(--accent-rgb),.4);background:rgba(var(--accent-rgb),.12)">без срывов</div>
     </div>
     <div style="display:flex;flex-direction:column;gap:10px">
       <div class="task done"><div class="check on">✓</div><span>Зарядка 20 минут</span></div>
@@ -374,7 +380,7 @@
     <div class="card" style="margin-top:12px">
       <div class="row between">
         <div class="label">Задачи за 7 дней</div>
-        <div class="pill" style="color:var(--gold);border-color:rgba(255,196,107,.4);background:rgba(255,196,107,.12)">пик 5</div>
+        <div class="pill" style="color:var(--gold);border-color:rgba(255,179,118,.4);background:rgba(255,179,118,.12)">пик 5</div>
       </div>
       <div class="bars">
         <div class="bar"><i style="height:40px"></i><span>пн</span></div>
@@ -389,11 +395,11 @@
     <div class="card" style="margin-top:12px">
       <div class="row between">
         <div class="label">Карта дней</div>
-        <div class="pill" style="color:var(--mint);border-color:rgba(74,222,155,.4);background:rgba(74,222,155,.12)">12 недель</div>
+        <div class="pill" style="color:var(--mint);border-color:rgba(var(--accent-rgb),.4);background:rgba(var(--accent-rgb),.12)">12 недель</div>
       </div>
       <div class="heat" id="heat"></div>
       <div class="legend">
-        <span><i style="background:rgba(74,222,155,.6)"></i>чисто</span>
+        <span><i style="background:rgba(var(--accent-rgb),.6)"></i>чисто</span>
         <span><i style="background:var(--danger)"></i>срыв</span>
         <span><i style="background:rgba(255,255,255,.06)"></i>не отслеживалось</span>
       </div>
@@ -449,13 +455,13 @@ P.forEach(p => {
   el.className = 'pr';
   el.innerHTML = `
     <div class="ring"><svg viewBox="0 0 44 44"><circle cx="22" cy="22" r="20" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="3"/>
-      <circle cx="22" cy="22" r="20" fill="none" stroke="${p.c}" stroke-width="3" stroke-linecap="round"
+      <circle cx="22" cy="22" r="20" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linecap="round"
         stroke-dasharray="${2*Math.PI*20}" stroke-dashoffset="${2*Math.PI*20*(1-Math.min(p.n,30)/30)}"/></svg>
       <div class="e">${p.e}</div></div>
     <div class="t"><b>${p.t}</b><div class="strip" style="margin-top:6px">
       <i></i><i></i><i></i><i class="bad"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i class="last"></i>
     </div></div>
-    <div style="text-align:right"><div style="font-size:17px;font-weight:900;color:${p.c}">${p.n}</div>
+    <div style="text-align:right"><div style="font-size:17px;font-weight:680;color:var(--text)">${p.n}</div>
     <div style="font-size:10px;color:var(--faint)">рекорд ${p.n + 20}</div></div>`;
   reportRows.appendChild(el);
 });
@@ -468,7 +474,7 @@ P.forEach((p, i) => {
   const c = document.createElement('div');
   c.className = 'cc';
   c.style.transform = `rotateY(${i * STEP}deg) translateZ(${RADIUS}px)`;
-  c.style.background = `linear-gradient(170deg, ${p.c}, ${p.c}bb 52%, ${p.c}55)`;
+  c.style.background = `radial-gradient(120% 92% at 24% 4%, ${p.c}3d, transparent 62%), linear-gradient(180deg, #16232A, #0E171D)`;
   c.style.boxShadow = `0 28px 56px rgba(0,0,0,.55), 0 10px 22px rgba(0,0,0,.35), 0 0 0 1px rgba(255,255,255,.10) inset`;
   c.innerHTML = `<div class="ico">${p.e}</div><div class="ttl">${p.t}</div>
     <div class="streak">🔥 ${p.n}<small>рекорд ${p.n+20}</small></div>`;
@@ -478,7 +484,7 @@ P.forEach((p, i) => {
 
   const d = document.createElement('i');
   if (i === 0) d.className = 'on';
-  d.style.background = i === 0 ? p.c : '';
+  d.style.background = i === 0 ? 'var(--accent)' : '';
   dots.appendChild(d);
 });
 
@@ -491,7 +497,7 @@ function render() {
   const idx = Math.round(norm / STEP) % P.length;
   [...dots.children].forEach((d, i) => {
     d.className = i === idx ? 'on' : '';
-    d.style.background = i === idx ? P[i].c : 'rgba(255,255,255,.16)';
+    d.style.background = i === idx ? 'var(--accent)' : 'rgba(255,255,255,.16)';
   });
   const p = P[idx];
   document.getElementById('detEmoji').textContent = p.e;

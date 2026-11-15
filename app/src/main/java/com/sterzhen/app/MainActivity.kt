@@ -57,6 +57,7 @@ import com.sterzhen.app.ui.screens.ReportsScreen
 import com.sterzhen.app.ui.screens.TodayScreen
 import com.sterzhen.app.ui.screens.WeekScreen
 import com.sterzhen.app.ui.theme.Ink
+import com.sterzhen.app.ui.theme.Radii
 import com.sterzhen.app.ui.theme.SterzhenTheme
 import com.sterzhen.app.widget.StreakWidget
 
@@ -126,23 +127,23 @@ private fun FloatingNav(current: Int, onSelect: (Int) -> Unit, modifier: Modifie
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 18.dp, vertical = 14.dp)
-            .clip(RoundedCornerShape(30.dp))
-            .background(Brush.verticalGradient(listOf(Ink.CardHi, Ink.Card)))
-            .border(1.dp, Color.White.copy(alpha = 0.09f), RoundedCornerShape(30.dp))
+            .clip(RoundedCornerShape(Radii.Menu))
+            .background(Color(0xE60A1015))
+            .border(1.dp, Color.White.copy(alpha = 0.065f), RoundedCornerShape(Radii.Menu))
             .padding(6.dp),
         horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         NAV_ITEMS.forEachIndexed { index, item ->
             val selected = index == current
             val tint by animateColorAsState(
-                targetValue = if (selected) Ink.Gold else Ink.TextFaint,
+                targetValue = if (selected) Ink.Ember else Ink.TextFaint,
                 animationSpec = tween(durationMillis = 220),
                 label = "navTint"
             )
             val background = if (selected) {
                 Modifier.background(
                     Brush.verticalGradient(
-                        listOf(Ink.Ember.copy(alpha = 0.22f), Color.Transparent)
+                        listOf(Ink.Ember.copy(alpha = 0.075f), Color.Transparent)
                     )
                 )
             } else {
@@ -152,7 +153,7 @@ private fun FloatingNav(current: Int, onSelect: (Int) -> Unit, modifier: Modifie
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .clip(RoundedCornerShape(24.dp))
+                    .clip(RoundedCornerShape(Radii.Card))
                     .then(background)
                     .clickable { onSelect(index) }
                     .padding(vertical = 9.dp),

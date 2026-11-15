@@ -75,6 +75,7 @@ import com.sterzhen.app.ui.components.SectionHeader
 import com.sterzhen.app.ui.components.StartDateDialog
 import com.sterzhen.app.ui.components.StreakRing
 import com.sterzhen.app.ui.theme.Ink
+import com.sterzhen.app.ui.theme.Radii
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.format.DateTimeFormatter
@@ -149,7 +150,7 @@ fun TodayScreen(vm: AppViewModel) {
     val stateById = states.associateBy { it.principle.id }
     val frontPrinciple = Principles.ALL[frontIndex]
     val frontState = stateById[frontPrinciple.id] ?: fallbackState(frontPrinciple)
-    val accent = Color(frontPrinciple.colorHex)
+    val accent = Ink.Ember
     val density = LocalDensity.current.density
 
     val todayStr = DateUtils.format(today)
@@ -261,7 +262,7 @@ fun TodayScreen(vm: AppViewModel) {
                 val radius = width * 0.54f
                 val cardW = 150.dp
                 val cardH = 196.dp
-                val cardShape = RoundedCornerShape(30.dp)
+                val cardShape = RoundedCornerShape(Radii.Hero)
 
                 Canvas(modifier = Modifier.fillMaxSize()) {
                     val r = size.minDimension * 0.72f
@@ -313,38 +314,44 @@ fun TodayScreen(vm: AppViewModel) {
                                 alpha = 0.16f + 0.84f * t
                             }
                             .clip(cardShape)
+                            // тёмная стеклянная база кита
                             .background(
-                                Brush.verticalGradient(
-                                    listOf(
-                                        cardColor.copy(alpha = 0.98f),
-                                        cardColor.copy(alpha = 0.74f),
-                                        cardColor.copy(alpha = 0.40f)
-                                    )
-                                )
+                                Brush.verticalGradient(listOf(Ink.CardHi, Ink.Card))
                             )
+                            // оттенок принципа — только как точечное свечение
                             .background(
                                 Brush.radialGradient(
                                     colors = listOf(
-                                        Color.White.copy(alpha = 0.22f),
+                                        cardColor.copy(alpha = 0.28f * t + 0.10f),
                                         Color.Transparent
                                     ),
-                                    center = Offset(56f, 34f),
-                                    radius = 240f
+                                    center = Offset(58f, 26f),
+                                    radius = 270f
                                 )
                             )
+                            // слой стекла 145deg
+                            .background(
+                                Brush.linearGradient(
+                                    listOf(
+                                        Color.White.copy(alpha = 0.055f),
+                                        Color.White.copy(alpha = 0.022f)
+                                    )
+                                )
+                            )
+                            // мягкое затухание вниз
                             .background(
                                 Brush.verticalGradient(
-                                    0.34f to Color.Transparent,
-                                    0.74f to Color.Black.copy(alpha = 0.30f),
-                                    1f to Color.Black.copy(alpha = 0.58f)
+                                    0.42f to Color.Transparent,
+                                    0.78f to Color.Black.copy(alpha = 0.22f),
+                                    1f to Color.Black.copy(alpha = 0.42f)
                                 )
                             )
                             .border(
                                 1.dp,
                                 Brush.verticalGradient(
                                     listOf(
-                                        Color.White.copy(alpha = 0.34f * t + 0.10f),
-                                        Color.White.copy(alpha = 0.05f)
+                                        Color.White.copy(alpha = 0.18f * t + 0.06f),
+                                        Color.White.copy(alpha = 0.03f)
                                     )
                                 ),
                                 cardShape
@@ -364,7 +371,12 @@ fun TodayScreen(vm: AppViewModel) {
                                 modifier = Modifier
                                     .size(44.dp)
                                     .clip(CircleShape)
-                                    .background(Color.White.copy(alpha = 0.16f)),
+                                    .background(Color.White.copy(alpha = 0.10f))
+                                    .border(
+                                        1.dp,
+                                        Color.White.copy(alpha = 0.12f),
+                                        CircleShape
+                                    ),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(text = principle.emoji, fontSize = 22.sp)
@@ -372,9 +384,10 @@ fun TodayScreen(vm: AppViewModel) {
                             Spacer(modifier = Modifier.height(9.dp))
                             Text(
                                 text = principle.title,
-                                fontWeight = FontWeight.Bold,
+                                fontWeight = FontWeight(680),
                                 fontSize = 13.sp,
-                                color = Color.White,
+                                letterSpacing = (-0.3).sp,
+                                color = Ink.Text,
                                 textAlign = TextAlign.Center,
                                 maxLines = 2,
                                 overflow = TextOverflow.Ellipsis,
@@ -386,7 +399,7 @@ fun TodayScreen(vm: AppViewModel) {
                                     text = "СРЫВ",
                                     fontSize = 9.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color(0xFFFFD7DB),
+                                    color = Ink.Danger,
                                     letterSpacing = 1.4.sp
                                 )
                                 Spacer(modifier = Modifier.height(3.dp))
@@ -399,9 +412,10 @@ fun TodayScreen(vm: AppViewModel) {
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
                                     text = "${st.currentStreak}",
-                                    fontWeight = FontWeight.Black,
+                                    fontWeight = FontWeight(680),
                                     fontSize = 17.sp,
-                                    color = Color.White
+                                    letterSpacing = (-0.5).sp,
+                                    color = Ink.Text
                                 )
                             }
                         }
@@ -416,7 +430,7 @@ fun TodayScreen(vm: AppViewModel) {
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Principles.ALL.forEachIndexed { i, p ->
+                Principles.ALL.forEachIndexed { i, _ ->
                     val active = i == frontIndex
                     Box(
                         modifier = Modifier
@@ -424,7 +438,7 @@ fun TodayScreen(vm: AppViewModel) {
                             .size(width = if (active) 18.dp else 6.dp, height = 6.dp)
                             .clip(CircleShape)
                             .background(
-                                if (active) Color(p.colorHex) else Color.White.copy(alpha = 0.16f)
+                                if (active) Ink.Ember else Color.White.copy(alpha = 0.16f)
                             )
                     )
                 }
@@ -553,9 +567,9 @@ fun TodayScreen(vm: AppViewModel) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(24.dp))
+                        .clip(RoundedCornerShape(Radii.Card))
                         .background(Color.White.copy(alpha = 0.03f))
-                        .border(1.dp, Color.White.copy(alpha = 0.06f), RoundedCornerShape(24.dp))
+                        .border(1.dp, Color.White.copy(alpha = 0.06f), RoundedCornerShape(Radii.Card))
                         .padding(20.dp)
                 ) {
                     Text(
@@ -622,9 +636,9 @@ private fun TaskRow(task: TaskEntity, onToggle: () -> Unit, onDelete: () -> Unit
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(22.dp))
+            .clip(RoundedCornerShape(Radii.Card))
             .background(Color.White.copy(alpha = 0.04f))
-            .border(1.dp, Color.White.copy(alpha = 0.06f), RoundedCornerShape(22.dp))
+            .border(1.dp, Color.White.copy(alpha = 0.06f), RoundedCornerShape(Radii.Card))
             .padding(horizontal = 14.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -642,7 +656,7 @@ private fun TaskRow(task: TaskEntity, onToggle: () -> Unit, onDelete: () -> Unit
             contentAlignment = Alignment.Center
         ) {
             if (task.done) {
-                Text(text = "✓", fontSize = 13.sp, color = Color(0xFF06120C))
+                Text(text = "✓", fontSize = 13.sp, color = Color(0xFF101716))
             }
         }
         Spacer(modifier = Modifier.width(12.dp))
@@ -670,9 +684,9 @@ private fun AddTaskField(value: String, onValueChange: (String) -> Unit, onAdd: 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(22.dp))
+            .clip(RoundedCornerShape(Radii.Card))
             .background(Color.White.copy(alpha = 0.04f))
-            .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(22.dp))
+            .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(Radii.Card))
             .padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -705,7 +719,7 @@ private fun AddTaskField(value: String, onValueChange: (String) -> Unit, onAdd: 
                 text = "+",
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF190A02)
+                color = Color(0xFF101716)
             )
         }
     }
