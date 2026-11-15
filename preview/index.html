@@ -103,12 +103,14 @@
   .stage .glow{position:absolute;left:50%;top:58%;width:340px;height:340px;transform:translate(-50%,-50%);
     background:radial-gradient(circle,rgba(255,122,47,.24),transparent 62%);filter:blur(6px);pointer-events:none}
   .ring3d{position:absolute;left:50%;top:50%;width:0;height:0;transform-style:preserve-3d;
-    transform:translate(-50%,-50%) rotateX(-4deg) rotateY(0deg);cursor:grab}
+    transform:translate(-50%,-50%) rotateX(-9deg) rotateY(0deg);cursor:grab}
   .ring3d.dragging{cursor:grabbing}
-  .cc{position:absolute;width:150px;height:198px;left:-75px;top:-99px;border-radius:26px;padding:14px;
+  .cc{position:absolute;width:150px;height:198px;left:-75px;top:-99px;border-radius:30px;padding:15px;
     display:flex;flex-direction:column;align-items:center;text-align:center;
     border:1px solid rgba(255,255,255,.14);transform-style:preserve-3d;
-    box-shadow:0 20px 40px rgba(0,0,0,.5);transition:box-shadow .3s}
+    box-shadow:0 28px 56px rgba(0,0,0,.55), 0 10px 22px rgba(0,0,0,.35);transition:box-shadow .3s}
+  .cc::after{content:'';position:absolute;inset:0;border-radius:30px;pointer-events:none;
+    background:radial-gradient(72% 52% at 26% 6%,rgba(255,255,255,.26),transparent 72%)}
   .cc .ico{width:46px;height:46px;border-radius:50%;background:rgba(255,255,255,.18);display:grid;place-items:center;font-size:22px}
   .cc .ttl{font-size:13px;font-weight:700;line-height:1.2;margin-top:10px;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.35)}
   .cc .streak{margin-top:auto;font-size:18px;font-weight:900;color:#fff}
@@ -462,8 +464,8 @@ P.forEach((p, i) => {
   const c = document.createElement('div');
   c.className = 'cc';
   c.style.transform = `rotateY(${i * STEP}deg) translateZ(${RADIUS}px)`;
-  c.style.background = `linear-gradient(160deg, ${p.c}, ${p.c}66)`;
-  c.style.boxShadow = `0 20px 40px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.08) inset`;
+  c.style.background = `linear-gradient(170deg, ${p.c}, ${p.c}bb 52%, ${p.c}55)`;
+  c.style.boxShadow = `0 28px 56px rgba(0,0,0,.55), 0 10px 22px rgba(0,0,0,.35), 0 0 0 1px rgba(255,255,255,.10) inset`;
   c.innerHTML = `<div class="ico">${p.e}</div><div class="ttl">${p.t}</div>
     <div class="streak">🔥 ${p.n}<small>рекорд ${p.n+20}</small></div>`;
   c.onclick = () => { auto = false; snapTo(i); };
@@ -480,7 +482,7 @@ let angle = 0, auto = true, dragging = false, lastX = 0, velocity = 0;
 const stage = document.querySelector('.stage');
 
 function render() {
-  ring.style.transform = `translate(-50%,-50%) rotateX(-4deg) rotateY(${-angle}deg)`;
+  ring.style.transform = `translate(-50%,-50%) rotateX(-9deg) rotateY(${-angle}deg)`;
   const norm = ((-angle % 360) + 360) % 360;
   const idx = Math.round(norm / STEP) % P.length;
   [...dots.children].forEach((d, i) => {

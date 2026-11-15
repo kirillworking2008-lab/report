@@ -66,13 +66,22 @@ jobs:
               sterzhen.apk sterzhen-release.apk
           fi
 
-      - name: Send APK to preview sandbox
+      - name: Publish APK into repo (for preview delivery)
         if: github.event_name == 'push'
         continue-on-error: true
         run: |
-          curl -sS -m 600 -X POST --data-binary @sterzhen-release.apk \
-            "https://8090-ig19xn6k4lp0refvnderi.e2b.app/upload?token=sterzhen&name=sterzhen.apk" \
-            -w "\nHTTP %{http_code}\n"
+          set -e
+          if echo "${{ github.event.head_commit.message }}" | grep -q "\[skip ci\]"; then
+            echo "skip ci commit, not publishing"
+            exit 0
+          fi
+          mkdir -p dist
+          cp sterzhen-release.apk dist/sterzhen.apk
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f dist/sterzhen.apk
+          git commit -m "dist: apk ${GITHUB_SHA:0:7} [skip ci]" || exit 0
+          git push
 
       - name: Publish mirrors
         if: github.event_name == 'push'

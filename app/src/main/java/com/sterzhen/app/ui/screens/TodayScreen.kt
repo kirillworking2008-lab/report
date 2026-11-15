@@ -44,6 +44,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -257,9 +258,10 @@ fun TodayScreen(vm: AppViewModel) {
                 val height = maxHeight
                 val cx = width / 2
                 val cy = height / 2
-                val radius = width * 0.50f
-                val cardW = 152.dp
-                val cardH = 190.dp
+                val radius = width * 0.54f
+                val cardW = 150.dp
+                val cardH = 196.dp
+                val cardShape = RoundedCornerShape(30.dp)
 
                 Canvas(modifier = Modifier.fillMaxSize()) {
                     val r = size.minDimension * 0.72f
@@ -286,42 +288,66 @@ fun TodayScreen(vm: AppViewModel) {
                     val cosA = cos(rad).toFloat()
                     val sinA = sin(rad).toFloat()
                     val t = (cosA + 1f) / 2f
-                    val perspective = 0.78f + 0.22f * t
+                    val perspective = 0.74f + 0.26f * t
                     val cardColor = Color(principle.colorHex)
 
                     Box(
                         modifier = Modifier
                             .offset(
                                 x = cx + radius * sinA - cardW / 2,
-                                y = cy - 26.dp * (1f - t) - cardH / 2
+                                y = cy - 34.dp * (1f - t) - cardH / 2
                             )
                             .size(cardW, cardH)
                             .zIndex(cosA)
+                            .shadow(
+                                elevation = (5 + 16 * t).dp,
+                                shape = cardShape,
+                                clip = false
+                            )
                             .graphicsLayer {
                                 rotationY = a % 360f
-                                cameraDistance = 16f * density
+                                rotationX = -9f
+                                cameraDistance = 12f * density
                                 scaleX = perspective
                                 scaleY = perspective
-                                alpha = 0.18f + 0.82f * t
+                                alpha = 0.16f + 0.84f * t
                             }
-                            .clip(RoundedCornerShape(24.dp))
+                            .clip(cardShape)
                             .background(
-                                Brush.linearGradient(
+                                Brush.verticalGradient(
                                     listOf(
-                                        cardColor.copy(alpha = 0.95f),
-                                        cardColor.copy(alpha = 0.45f)
+                                        cardColor.copy(alpha = 0.98f),
+                                        cardColor.copy(alpha = 0.74f),
+                                        cardColor.copy(alpha = 0.40f)
                                     )
                                 )
                             )
                             .background(
+                                Brush.radialGradient(
+                                    colors = listOf(
+                                        Color.White.copy(alpha = 0.22f),
+                                        Color.Transparent
+                                    ),
+                                    center = Offset(56f, 34f),
+                                    radius = 240f
+                                )
+                            )
+                            .background(
                                 Brush.verticalGradient(
-                                    listOf(Color.Transparent, Color.Black.copy(alpha = 0.45f))
+                                    0.34f to Color.Transparent,
+                                    0.74f to Color.Black.copy(alpha = 0.30f),
+                                    1f to Color.Black.copy(alpha = 0.58f)
                                 )
                             )
                             .border(
                                 1.dp,
-                                Color.White.copy(alpha = 0.10f + 0.32f * t),
-                                RoundedCornerShape(24.dp)
+                                Brush.verticalGradient(
+                                    listOf(
+                                        Color.White.copy(alpha = 0.34f * t + 0.10f),
+                                        Color.White.copy(alpha = 0.05f)
+                                    )
+                                ),
+                                cardShape
                             )
                             .clickable(enabled = cosA > 0.2f) {
                                 stopAuto()

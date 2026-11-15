@@ -114,7 +114,7 @@ fun AuroraBackground(content: @Composable BoxScope.() -> Unit) {
 @Composable
 fun GlassCard(
     modifier: Modifier = Modifier,
-    shape: RoundedCornerShape = RoundedCornerShape(28.dp),
+    shape: RoundedCornerShape = RoundedCornerShape(30.dp),
     glow: Color? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
@@ -124,18 +124,18 @@ fun GlassCard(
             .background(Brush.verticalGradient(listOf(Ink.CardHi, Ink.Card)))
             .background(
                 Brush.verticalGradient(
-                    listOf(
-                        Color.White.copy(alpha = 0.06f),
-                        Color.White.copy(alpha = 0.0f)
-                    )
+                    0f to Color.White.copy(alpha = 0.07f),
+                    0.55f to Color.White.copy(alpha = 0.015f),
+                    1f to Color.Transparent
                 )
             )
             .border(
                 1.dp,
                 Brush.verticalGradient(
                     listOf(
-                        (glow ?: Color.White).copy(alpha = 0.35f),
-                        Color.White.copy(alpha = 0.04f)
+                        (glow ?: Color.White).copy(alpha = 0.30f),
+                        Color.White.copy(alpha = 0.05f),
+                        Color.White.copy(alpha = 0.02f)
                     )
                 ),
                 shape
