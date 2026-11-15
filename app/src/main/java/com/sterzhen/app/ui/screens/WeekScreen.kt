@@ -1,6 +1,7 @@
 package com.sterzhen.app.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -11,29 +12,28 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.IconButton
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -41,7 +41,11 @@ import com.sterzhen.app.data.DateUtils
 import com.sterzhen.app.data.db.TaskEntity
 import com.sterzhen.app.ui.AppViewModel
 import com.sterzhen.app.ui.RU_LOCALE
+import com.sterzhen.app.ui.components.GlassCard
+import com.sterzhen.app.ui.components.Pill
+import com.sterzhen.app.ui.components.SectionHeader
 import com.sterzhen.app.ui.dayShortName
+import com.sterzhen.app.ui.theme.Ink
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -52,12 +56,16 @@ fun WeekScreen(vm: AppViewModel) {
     val today by vm.today.collectAsState()
     val tasks by vm.tasks.collectAsState()
     val slips by vm.slips.collectAsState()
-    var newTask by remember { mutableStateOf("") }
-    var selected by remember { mutableStateOf(today) }
 
-    val monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+    var weekOffset by remember { mutableIntStateOf(0) }
+    var selected by remember { mutableStateOf(today) }
+    var newTask by remember { mutableStateOf("") }
+
+    val monday = today
+        .with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+        .plusWeeks(weekOffset.toLong())
     val days: List<LocalDate> = (0..6).map { monday.plusDays(it.toLong()) }
-    if (selected !in days) selected = today
+    if (selected !in days) selected = if (today in days) today else days.first()
 
     val tasksByDate = tasks.groupBy { it.date }
     val slipsByDate = slips.groupBy { it.date }
@@ -65,49 +73,35 @@ fun WeekScreen(vm: AppViewModel) {
     val weekTasks = days.flatMap { tasksByDate[DateUtils.format(it)].orEmpty() }
     val weekDone = weekTasks.count { it.done }
     val weekSlips = days.sumOf { slipsByDate[DateUtils.format(it)]?.size ?: 0 }
-    val idealDays = days.count {
-        DateUtils.format(it) <= DateUtils.format(today) &&
-            (slipsByDate[DateUtils.format(it)]?.isEmpty() ?: true)
+    val cleanDays = days.count { day ->
+        DateUtils.format(day) <= DateUtils.format(today) &&
+            slipsByDate[DateUtils.format(day)].isNullOrEmpty()
     }
-
-    val selectedTasks = tasksByDate[DateUtils.format(selected)].orEmpty()
+    val selectedKey = DateUtils.format(selected)
+    val selectedTasks = tasksByDate[selectedKey].orEmpty()
+    val selectedSlips = slipsByDate[selectedKey].orEmpty()
 
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(top = 20.dp, bottom = 130.dp)
     ) {
         item {
-            Text(
-                text = "Неделя",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = "${monday.format(DateTimeFormatter.ofPattern("d MMMM", RU_LOCALE))} — " +
-                    "${monday.plusDays(6).format(DateTimeFormatter.ofPattern("d MMMM", RU_LOCALE))}",
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-
-        item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
-                )
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    WeekStat(value = "$weekDone/${weekTasks.size}", label = "задач выполнено")
-                    WeekStat(value = "$weekSlips", label = "срывов")
-                    WeekStat(value = "$idealDays", label = "чистых дней")
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(modifier = Modifier.weight(1f)) {
+                    SectionHeader(title = "Неделя")
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = "${monday.format(DateTimeFormatter.ofPattern("d MMM", RU_LOCALE))} — " +
+                            monday.plusDays(6).format(DateTimeFormatter.ofPattern("d MMMM", RU_LOCALE)),
+                        style = MaterialTheme.typography.headlineMedium
+                    )
                 }
+                RoundIcon(text = "‹") { weekOffset -= 1 }
+                Spacer(modifier = Modifier.width(8.dp))
+                RoundIcon(text = "›") { weekOffset += 1 }
             }
         }
 
@@ -119,73 +113,106 @@ fun WeekScreen(vm: AppViewModel) {
                 days.forEach { day ->
                     val key = DateUtils.format(day)
                     val dayDone = tasksByDate[key].orEmpty().count { it.done }
+                    val dayTasks = tasksByDate[key].orEmpty().size
                     val daySlips = slipsByDate[key]?.size ?: 0
                     val isSelected = day == selected
                     val isToday = day == today
-                    Box(
+                    val accent = if (isSelected) {
+                        listOf(Ink.Ember, Ink.EmberDeep)
+                    } else {
+                        listOf(Color.White.copy(alpha = 0.07f), Color.White.copy(alpha = 0.03f))
+                    }
+
+                    Column(
                         modifier = Modifier
                             .weight(1f)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(
-                                when {
-                                    isSelected -> MaterialTheme.colorScheme.primary
-                                    isToday -> MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)
-                                    else -> MaterialTheme.colorScheme.surfaceVariant
-                                }
+                            .clip(RoundedCornerShape(18.dp))
+                            .background(Brush.verticalGradient(accent))
+                            .border(
+                                1.dp,
+                                if (isToday && !isSelected) Ink.Ember.copy(alpha = 0.45f)
+                                else Color.White.copy(alpha = 0.07f),
+                                RoundedCornerShape(18.dp)
                             )
                             .clickable { selected = day }
                             .padding(vertical = 10.dp),
-                        contentAlignment = Alignment.Center
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                text = dayShortName(day.dayOfWeek),
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = if (isSelected) Color.White
-                                else MaterialTheme.colorScheme.onSurface
-                            )
-                            Text(
-                                text = "${day.dayOfMonth}",
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = if (isSelected) Color.White
-                                else MaterialTheme.colorScheme.onSurface
-                            )
-                            Text(
-                                text = "✓$dayDone",
-                                fontSize = 10.sp,
-                                color = if (isSelected) Color.White
-                                else MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Text(
-                                text = if (daySlips == 0) "🔥" else "⚠$daySlips",
-                                fontSize = 10.sp,
-                                color = if (isSelected) Color.White
-                                else MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+                        Text(
+                            text = dayShortName(day.dayOfWeek).take(2),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (isSelected) Color(0xFF1A0A02) else Ink.TextFaint
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "${day.dayOfMonth}",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isSelected) Color(0xFF1A0A02) else Ink.Text
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Box(
+                            modifier = Modifier
+                                .size(5.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    when {
+                                        daySlips > 0 -> Ink.Danger
+                                        dayTasks > 0 && dayDone == dayTasks -> Ink.Mint
+                                        dayTasks > 0 -> Ink.Gold.copy(alpha = 0.8f)
+                                        else -> Color.White.copy(alpha = 0.15f)
+                                    }
+                                )
+                        )
                     }
                 }
             }
         }
 
         item {
-            Text(
-                text = selected.format(
-                    DateTimeFormatter.ofPattern("EEEE, d MMMM", RU_LOCALE)
-                ),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
-            )
+            GlassCard(modifier = Modifier.fillMaxWidth()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    BigStat(value = "$weekDone", label = "выполнено", color = Ink.Text)
+                    BigStat(value = "$weekSlips", label = "срывов", color = if (weekSlips > 0) Ink.Danger else Ink.TextDim)
+                    BigStat(value = "$cleanDays", label = "чистых дней", color = Ink.Mint)
+                }
+            }
+        }
+
+        item {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = selected.format(DateTimeFormatter.ofPattern("EEEE, d MMMM", RU_LOCALE))
+                        .replaceFirstChar { it.uppercase() },
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.weight(1f)
+                )
+                Pill(
+                    text = if (selectedSlips.isEmpty()) "без срывов" else "срывов: ${selectedSlips.size}",
+                    color = if (selectedSlips.isEmpty()) Ink.Mint else Ink.Danger
+                )
+            }
         }
 
         if (selectedTasks.isEmpty()) {
             item {
-                Text(
-                    text = "На этот день задач нет.",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(24.dp))
+                        .background(Color.White.copy(alpha = 0.03f))
+                        .border(1.dp, Color.White.copy(alpha = 0.06f), RoundedCornerShape(24.dp))
+                        .padding(20.dp)
+                ) {
+                    Text(
+                        text = "На этот день задач нет.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Ink.TextDim
+                    )
+                }
             }
         }
 
@@ -199,69 +226,132 @@ fun WeekScreen(vm: AppViewModel) {
 
         item {
             Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(22.dp))
+                    .background(Color.White.copy(alpha = 0.04f))
+                    .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(22.dp))
+                    .padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                OutlinedTextField(
-                    value = newTask,
-                    onValueChange = { newTask = it },
-                    label = { Text("Задача на этот день") },
-                    singleLine = true,
-                    modifier = Modifier.weight(1f)
-                )
-                Button(
-                    onClick = {
-                        vm.addTask(newTask, selected)
-                        newTask = ""
+                Box(modifier = Modifier.weight(1f)) {
+                    if (newTask.isEmpty()) {
+                        Text(
+                            text = "Задача на этот день…",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = Ink.TextFaint
+                        )
                     }
+                    BasicTextField(
+                        value = newTask,
+                        onValueChange = { newTask = it },
+                        singleLine = true,
+                        textStyle = MaterialTheme.typography.bodyLarge.copy(color = Ink.Text),
+                        cursorBrush = Brush.horizontalGradient(listOf(Ink.Ember, Ink.Gold)),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(Brush.horizontalGradient(listOf(Ink.Ember, Ink.EmberDeep)))
+                        .clickable {
+                            vm.addTask(newTask, selected)
+                            newTask = ""
+                        },
+                    contentAlignment = Alignment.Center
                 ) {
-                    Text("+")
+                    Text(
+                        text = "+",
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF190A02)
+                    )
                 }
             }
-            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }
 
 @Composable
-private fun WeekStat(value: String, label: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+private fun RoundIcon(text: String, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .size(38.dp)
+            .clip(CircleShape)
+            .background(Color.White.copy(alpha = 0.06f))
+            .border(1.dp, Color.White.copy(alpha = 0.09f), CircleShape)
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = text,
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold,
+            color = Ink.Text
+        )
+    }
+}
+
+@Composable
+private fun BigStat(value: String, label: String, color: Color) {
+    Column {
         Text(
             text = value,
-            fontWeight = FontWeight.Bold,
-            fontSize = 20.sp,
-            textAlign = TextAlign.Center
+            style = MaterialTheme.typography.displayMedium,
+            color = color
         )
         Text(
             text = label,
-            fontSize = 12.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
+            style = MaterialTheme.typography.bodySmall,
+            color = Ink.TextFaint
         )
     }
 }
 
 @Composable
 private fun WeekTaskRow(task: TaskEntity, onToggle: () -> Unit, onDelete: () -> Unit) {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(22.dp))
+            .background(Color.White.copy(alpha = 0.04f))
+            .border(1.dp, Color.White.copy(alpha = 0.06f), RoundedCornerShape(22.dp))
+            .padding(horizontal = 14.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(24.dp)
+                .clip(CircleShape)
+                .background(if (task.done) Ink.Mint.copy(alpha = 0.9f) else Color.Transparent)
+                .border(
+                    1.5.dp,
+                    if (task.done) Ink.Mint else Color.White.copy(alpha = 0.25f),
+                    CircleShape
+                )
+                .clickable(onClick = onToggle),
+            contentAlignment = Alignment.Center
         ) {
-            Checkbox(checked = task.done, onCheckedChange = { onToggle() })
-            Text(
-                text = task.title,
-                modifier = Modifier.weight(1f),
-                textDecoration = if (task.done) TextDecoration.LineThrough else null,
-                color = if (task.done) {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                } else {
-                    MaterialTheme.colorScheme.onSurface
-                }
-            )
-            IconButton(onClick = onDelete) {
-                Text("🗑")
-            }
+            if (task.done) Text(text = "✓", fontSize = 13.sp, color = Color(0xFF06120C))
+        }
+        Spacer(modifier = Modifier.width(12.dp))
+        Text(
+            text = task.title,
+            style = MaterialTheme.typography.bodyLarge,
+            color = if (task.done) Ink.TextFaint else Ink.Text,
+            textDecoration = if (task.done) TextDecoration.LineThrough else null,
+            modifier = Modifier.weight(1f)
+        )
+        Box(
+            modifier = Modifier
+                .size(28.dp)
+                .clip(CircleShape)
+                .clickable(onClick = onDelete),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(text = "✕", fontSize = 13.sp, color = Ink.TextFaint)
         }
     }
 }

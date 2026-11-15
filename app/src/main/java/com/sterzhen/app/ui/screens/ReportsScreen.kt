@@ -1,6 +1,7 @@
 package com.sterzhen.app.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,13 +11,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -25,16 +23,22 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sterzhen.app.data.DateUtils
 import com.sterzhen.app.ui.AppViewModel
 import com.sterzhen.app.ui.PrincipleState
-import com.sterzhen.app.ui.components.DaysDots
-import com.sterzhen.app.ui.components.FireStreak
+import com.sterzhen.app.ui.components.BigStreak
+import com.sterzhen.app.ui.components.DayStrip
+import com.sterzhen.app.ui.components.GlassCard
+import com.sterzhen.app.ui.components.Pill
+import com.sterzhen.app.ui.components.SectionHeader
+import com.sterzhen.app.ui.components.StreakRing
 import com.sterzhen.app.ui.dayShortName
+import com.sterzhen.app.ui.theme.Ink
 
 @Composable
 fun ReportsScreen(vm: AppViewModel) {
@@ -44,93 +48,130 @@ fun ReportsScreen(vm: AppViewModel) {
     val states by vm.principleStates.collectAsState()
 
     val totalDone = tasks.count { it.done }
+    val totalTasks = tasks.size
     val totalSlips = slips.size
     val bestOverall = states.maxOfOrNull { it.bestStreak } ?: 0
-    val currentOverall = states.maxOfOrNull { it.currentStreak } ?: 0
+    val currentBest = states.maxOfOrNull { it.currentStreak } ?: 0
 
     val last7 = (6 downTo 0).map { offset ->
         val day = today.minusDays(offset.toLong())
         val done = tasks.count { it.date == DateUtils.format(day) && it.done }
         day to done
     }
+    val peak = last7.maxOfOrNull { it.second }?.coerceAtLeast(1) ?: 1
 
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(top = 20.dp, bottom = 130.dp)
     ) {
         item {
+            SectionHeader(title = "Отчёты")
+            Spacer(modifier = Modifier.height(6.dp))
             Text(
-                text = "Отчёты",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold
+                text = "Твоя динамика",
+                style = MaterialTheme.typography.displayMedium
             )
         }
 
         item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                MetricCard(
+                    modifier = Modifier.weight(1f),
+                    title = "ОГОНЁК",
+                    value = "$currentBest",
+                    unit = "дней",
+                    color = Ink.Ember
                 )
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    ReportStat(value = "$totalDone", label = "задач выполнено")
-                    ReportStat(value = "🔥 $currentOverall", label = "лучший огонёк")
-                    ReportStat(value = "🏆 $bestOverall", label = "рекорд, дней")
-                    ReportStat(value = "$totalSlips", label = "срывов")
-                }
+                MetricCard(
+                    modifier = Modifier.weight(1f),
+                    title = "РЕКОРД",
+                    value = "$bestOverall",
+                    unit = "дней",
+                    color = Ink.Gold
+                )
             }
         }
 
         item {
-            Text(
-                text = "Задачи за последние 7 дней",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
-            )
-            Card(modifier = Modifier.fillMaxWidth()) {
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                MetricCard(
+                    modifier = Modifier.weight(1f),
+                    title = "ЗАДАЧИ",
+                    value = "$totalDone",
+                    unit = "из $totalTasks",
+                    color = Ink.Mint
+                )
+                MetricCard(
+                    modifier = Modifier.weight(1f),
+                    title = "СРЫВЫ",
+                    value = "$totalSlips",
+                    unit = "всего",
+                    color = if (totalSlips > 0) Ink.Danger else Ink.TextDim
+                )
+            }
+        }
+
+        item {
+            GlassCard(modifier = Modifier.fillMaxWidth()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "ЗАДАЧИ ЗА 7 ДНЕЙ",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Ink.TextFaint,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Pill(text = "пик $peak", color = Ink.Gold)
+                }
+                Spacer(modifier = Modifier.height(18.dp))
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(150.dp)
-                        .padding(16.dp),
+                        .height(150.dp),
                     verticalAlignment = Alignment.Bottom,
-                    horizontalArrangement = Arrangement.SpaceEvenly
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     last7.forEach { (day, done) ->
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(text = "$done", fontSize = 12.sp)
-                            Spacer(modifier = Modifier.height(4.dp))
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Bottom
+                        ) {
+                            Text(
+                                text = "$done",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = if (done > 0) Ink.Text else Ink.TextFaint
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
                             Box(
                                 modifier = Modifier
-                                    .width(30.dp)
-                                    .height((done * 10).coerceAtLeast(4).dp)
-                                    .clip(RoundedCornerShape(6.dp))
+                                    .width(26.dp)
+                                    .height(
+                                        (14 + (done.toFloat() / peak) * 78f).dp
+                                    )
+                                    .clip(RoundedCornerShape(10.dp))
                                     .background(
                                         if (day == today) {
-                                            MaterialTheme.colorScheme.primary
+                                            Brush.verticalGradient(listOf(Ink.Ember, Ink.EmberDeep))
                                         } else {
-                                            MaterialTheme.colorScheme.primary.copy(alpha = 0.45f)
+                                            Brush.verticalGradient(
+                                                listOf(
+                                                    Ink.Ember.copy(alpha = 0.55f),
+                                                    Ink.EmberDeep.copy(alpha = 0.25f)
+                                                )
+                                            )
                                         }
                                     )
                             )
-                            Spacer(modifier = Modifier.height(4.dp))
+                            Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = dayShortName(day.dayOfWeek),
-                                fontSize = 11.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Text(
-                                text = "${day.dayOfMonth}",
-                                fontSize = 11.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                text = dayShortName(day.dayOfWeek).take(2),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = if (day == today) Ink.Text else Ink.TextFaint
                             )
                         }
                     }
@@ -139,73 +180,82 @@ fun ReportsScreen(vm: AppViewModel) {
         }
 
         item {
-            Text(
-                text = "Стержень по принципам",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
+            Spacer(modifier = Modifier.height(4.dp))
+            SectionHeader(
+                title = "Стержень по принципам",
+                caption = "Полоски — последние 14 дней"
             )
         }
 
         items(states, key = { it.principle.id }) { st ->
             PrincipleReportRow(state = st)
         }
-
-        item {
-            Spacer(modifier = Modifier.height(8.dp))
-        }
     }
 }
 
 @Composable
-private fun ReportStat(value: String, label: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+private fun MetricCard(
+    modifier: Modifier = Modifier,
+    title: String,
+    value: String,
+    unit: String,
+    color: Color
+) {
+    GlassCard(modifier = modifier, shape = RoundedCornerShape(24.dp)) {
         Text(
-            text = value,
-            fontWeight = FontWeight.Bold,
-            fontSize = 18.sp,
-            textAlign = TextAlign.Center
+            text = title,
+            style = MaterialTheme.typography.labelSmall,
+            color = Ink.TextFaint
         )
+        Spacer(modifier = Modifier.height(10.dp))
+        BigStreak(streak = value.toIntOrNull() ?: 0, fontSize = 34, color = color)
         Text(
-            text = label,
-            fontSize = 11.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
+            text = unit,
+            style = MaterialTheme.typography.bodySmall,
+            color = Ink.TextDim
         )
     }
 }
 
 @Composable
 private fun PrincipleReportRow(state: PrincipleState) {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(14.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(text = state.principle.emoji, fontSize = 24.sp)
-                Spacer(modifier = Modifier.size(10.dp))
-                Text(
-                    text = state.principle.title,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp,
-                    modifier = Modifier.weight(1f)
-                )
-                FireStreak(streak = state.currentStreak)
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Рекорд: ${state.bestStreak} дн.",
-                    fontSize = 13.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                DaysDots(days = state.lastDays)
-            }
+    val accent = Color(state.principle.colorHex)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(24.dp))
+            .background(Color.White.copy(alpha = 0.035f))
+            .border(1.dp, Color.White.copy(alpha = 0.06f), RoundedCornerShape(24.dp))
+            .padding(horizontal = 14.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        StreakRing(
+            streak = state.currentStreak,
+            color = accent,
+            emoji = state.principle.emoji,
+            dimension = 44.dp
+        )
+        Spacer(modifier = Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = "Последние 14 дней",
-                fontSize = 11.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                text = state.principle.title,
+                style = MaterialTheme.typography.titleMedium
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            DayStrip(days = state.lastDays, barHeight = 16.dp)
+        }
+        Spacer(modifier = Modifier.width(12.dp))
+        Column(horizontalAlignment = Alignment.End) {
+            Text(
+                text = "${state.currentStreak}",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Black,
+                color = accent
+            )
+            Text(
+                text = "рекорд ${state.bestStreak}",
+                fontSize = 10.sp,
+                color = Ink.TextFaint
             )
         }
     }
