@@ -91,6 +91,10 @@ jobs:
           TM=$(curl -sS -m 300 --upload-file "$APK" "https://temp.sh/sterzhen.apk" || true)
           echo "TEMPSH=$TM"
 
+          check() {
+            curl -sIL -m 60 "$1" 2>/dev/null | grep -iE "^(HTTP/|content-length)" | tr -d '\r' | tr '\n' ' '
+          }
+
           {
             echo "Зеркала APK (сборка ${GITHUB_SHA:0:7}):"
             echo
@@ -100,6 +104,10 @@ jobs:
             if [ -n "$UG" ]; then echo "uguu: $UG"; fi
             if [ -n "$TS" ]; then echo "transfer: $TS"; fi
             if [ -n "$TM" ]; then echo "temp.sh: $TM"; fi
+            echo
+            echo "Проверка ссылок:"
+            echo "gofile  -> $(check 'https://gofile.io/d/l2wPBIMQ')"
+            echo "filebin -> $(check "https://filebin.net/$BIN/sterzhen-release.apk")"
           } > /tmp/mirrors.md
           head -c 60000 /tmp/mirrors.md > /tmp/mirrors_trim.md
           cat /tmp/mirrors_trim.md
