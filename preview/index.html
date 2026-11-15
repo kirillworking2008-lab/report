@@ -216,7 +216,8 @@
 
 <div class="hero">
   <div class="tag">ПРЕВЬЮ ДИЗАЙНА · НЕ ПРИЛОЖЕНИЕ</div>
-  <a class="dl" href="/sterzhen.apk" download>⬇ Скачать APK (10.9 МБ)</a>
+  <a class="dl" id="dlApk" href="/sterzhen.apk" download>⬇ Скачать APK (10.9 МБ)</a>
+  <div id="dlState" style="font-size:11px;color:var(--faint);margin:-8px 0 14px"></div>
   <h1>Стержень<br><span>новый вид</span></h1>
   <p>Интерактивный макет: стержень теперь на «Сегодня» — крути 3D-карусель мышью.</p>
   <div class="wrow">
@@ -659,6 +660,42 @@ function closeSheets() {
   document.getElementById('scrim').classList.remove('on');
 }
 document.getElementById('scrim').onclick = closeSheets;
+</script>
+<script>
+/* Скачивание APK: сначала пробуем blob (работает и внутри превью-панели,
+   где прямая навигация может блокироваться), иначе — обычная ссылка. */
+(function () {
+  const btn = document.getElementById('dlApk');
+  const state = document.getElementById('dlState');
+  if (!btn) return;
+  btn.addEventListener('click', async (e) => {
+    if (btn.dataset.busy === '1') return;
+    btn.dataset.busy = '1';
+    const label = btn.textContent;
+    btn.textContent = '⏳ Готовлю файл…';
+    if (state) state.textContent = '10.9 МБ, обычно 1–2 секунды';
+    try {
+      const res = await fetch('/sterzhen.apk', { cache: 'no-store' });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'sterzhen.apk';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 30000);
+      if (state) state.textContent = 'Файл отдан браузеру — проверь «Загрузки»';
+    } catch (err) {
+      if (state) state.textContent = 'Blob не сработал (' + err.message + ') — качаю прямой ссылкой';
+      window.location.href = '/sterzhen.apk';
+    } finally {
+      btn.textContent = label;
+      btn.dataset.busy = '0';
+    }
+  });
+})();
 </script>
 </body>
 </html>

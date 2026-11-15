@@ -89,6 +89,29 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           APK=sterzhen-release.apk
+          echo "== gofile (реальная загрузка) =="
+          GF=""
+          GF_SERVER=$(curl -sS -m 60 https://api.gofile.io/servers \
+            | sed -n 's/.*"name":"\([^"]*\)".*/\1/p' | head -1)
+          echo "gofile server: $GF_SERVER"
+          if [ -n "$GF_SERVER" ]; then
+            GF_JSON=$(curl -sS -m 600 -F "file=@$APK" \
+              "https://$GF_SERVER.gofile.io/contents/uploadfile" || true)
+            echo "GOFILE_JSON=$(echo "$GF_JSON" | head -c 400)"
+            GF=$(echo "$GF_JSON" | sed -n 's/.*"downloadPage":"\([^"]*\)".*/\1/p')
+          fi
+          if [ -z "$GF" ]; then
+            echo "новая ручка не отдала ссылку — пробуем legacy"
+            LEG_SERVER=$(curl -sS -m 60 https://api.gofile.io/getServer \
+              | sed -n 's/.*"server":"\([^"]*\)".*/\1/p')
+            if [ -n "$LEG_SERVER" ]; then
+              GF_JSON=$(curl -sS -m 600 -F "file=@$APK" \
+                "https://$LEG_SERVER.gofile.io/uploadFile" || true)
+              echo "GOFILE_LEGACY=$(echo "$GF_JSON" | head -c 400)"
+              GF=$(echo "$GF_JSON" | sed -n 's/.*"downloadPage":"\([^"]*\)".*/\1/p')
+            fi
+          fi
+          echo "GOFILE=$GF"
           echo "== pixeldrain =="
           PD=$(curl -sS -m 300 -T "$APK" https://pixeldrain.com/api/file/ || true)
           echo "PIXELDRAIN=$PD"
@@ -104,6 +127,14 @@ jobs:
           echo "== transfer.sh =="
           TS=$(curl -sS -m 300 --upload-file "$APK" "https://transfer.sh/sterzhen.apk" || true)
           echo "TRANSFER=$TS"
+          echo "== tmpfiles.org =="
+          TF_JSON=$(curl -sS -m 300 -A "Mozilla/5.0" -F "file=@$APK" https://tmpfiles.org/api/v1/upload || true)
+          echo "TMPFILES=$(echo "$TF_JSON" | head -c 300)"
+          TF=$(echo "$TF_JSON" | sed -n 's/.*"url":"\([^"]*\)".*/\1/p' | sed 's#https://tmpfiles.org/#https://tmpfiles.org/dl/#')
+          echo "== litterbox (72ч) =="
+          LB=$(curl -sS -m 300 -A "Mozilla/5.0" -F "reqtype=fileupload" -F "time=72h" \
+            -F "fileToUpload=@$APK" https://litterbox.catbox.moe/resources/internals/api.php || true)
+          echo "LITTERBOX=$LB"
           echo "== temp.sh =="
           TM=$(curl -sS -m 300 --upload-file "$APK" "https://temp.sh/sterzhen.apk" || true)
           echo "TEMPSH=$TM"
@@ -115,7 +146,9 @@ jobs:
           {
             echo "Зеркала APK (сборка ${GITHUB_SHA:0:7}):"
             echo
-            echo "gofile: https://gofile.io/d/l2wPBIMQ"
+            if [ -n "$GF" ]; then echo "gofile (свежий): $GF"; else echo "gofile: загрузка не удалась"; fi
+            if [ -n "$TF" ]; then echo "tmpfiles: $TF"; fi
+            if [ -n "$LB" ]; then echo "litterbox: $LB"; fi
             if [ -n "$PD_ID" ]; then echo "pixeldrain: https://pixeldrain.com/api/file/$PD_ID?download"; fi
             echo "filebin: https://filebin.net/$BIN/sterzhen-release.apk"
             if [ -n "$UG" ]; then echo "uguu: $UG"; fi
@@ -123,7 +156,8 @@ jobs:
             if [ -n "$TM" ]; then echo "temp.sh: $TM"; fi
             echo
             echo "Проверка ссылок:"
-            echo "gofile  -> $(check 'https://gofile.io/d/l2wPBIMQ')"
+            if [ -n "$GF" ]; then echo "gofile  -> $(check "$GF")"; fi
+            if [ -n "$TF" ]; then echo "tmpfiles -> $(check "$TF")"; fi
             echo "filebin -> $(check "https://filebin.net/$BIN/sterzhen-release.apk")"
           } > /tmp/mirrors.md
           head -c 60000 /tmp/mirrors.md > /tmp/mirrors_trim.md
