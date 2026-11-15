@@ -20,9 +20,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -60,9 +60,8 @@ import kotlin.math.sin
 
 /**
  * Экран «Стержень»: круговая 3D-карусель из 7 принципов.
- * Карточки стоят по кругу, поворачиваются в 3D (rotationY + перспектива),
- * крутятся свайпом и сами медленно вращаются, когда не трогаешь.
- * Карточка спереди — активная: под каруселью её детали и кнопка отметки.
+ * Карточки стоят по кругу, разворачиваются в объёме (rotationY + перспектива),
+ * крутятся свайпом и медленно вращаются сами. Карточка спереди — активная.
  */
 @Composable
 fun CoreScreen(vm: AppViewModel) {
@@ -77,7 +76,7 @@ fun CoreScreen(vm: AppViewModel) {
     val count = Principles.ALL.size
     val step = 360f / count
 
-    // Автовращение, когда карусель не трогают и не доводят до карточки.
+    // Автовращение, когда карусель не трогают.
     LaunchedEffect(isDragging, isSnapping) {
         if (!isDragging && !isSnapping) {
             while (true) {
@@ -103,9 +102,7 @@ fun CoreScreen(vm: AppViewModel) {
         }
     }
 
-    fun snapToNearest() {
-        animateAngleTo((angle / step).roundToInt() * step)
-    }
+    fun snapToNearest() = animateAngleTo((angle / step).roundToInt() * step)
 
     fun bringToFront(index: Int) {
         val current = ((angle + index * step) % 360f + 360f) % 360f
@@ -113,7 +110,7 @@ fun CoreScreen(vm: AppViewModel) {
         animateAngleTo(angle + delta, durationMs = 450L)
     }
 
-    // Какая карточка сейчас спереди (ближе всего к углу 0).
+    // Карточка, которая сейчас ближе всего к переднему плану (угол 0).
     val frontIndex by remember {
         derivedStateOf {
             Principles.ALL.indices.minByOrNull { i ->
@@ -122,14 +119,15 @@ fun CoreScreen(vm: AppViewModel) {
             } ?: 0
         }
     }
-    val frontState = stateById[Principles.ALL[frontIndex].id]
-        ?: PrincipleState(
-            principle = Principles.ALL[frontIndex],
-            currentStreak = 0,
-            bestStreak = 0,
-            keptToday = false,
-            lastDays = List(14) { null }
-        )
+    val frontPrinciple = Principles.ALL[frontIndex]
+    val frontState = stateById[frontPrinciple.id] ?: PrincipleState(
+        principle = frontPrinciple,
+        currentStreak = 0,
+        bestStreak = 0,
+        slippedToday = false,
+        tracked = false,
+        lastDays = List(14) { null }
+    )
 
     Column(
         modifier = Modifier
@@ -145,7 +143,7 @@ fun CoreScreen(vm: AppViewModel) {
             modifier = Modifier.fillMaxWidth()
         )
         Text(
-            text = "Тяни, чтобы крутить. Нажми на карточку, чтобы поднести её вперёд.",
+            text = "Тяни, чтобы крутить. Нажми на карточку — поднесёшь её вперёд.",
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 13.sp,
             modifier = Modifier.fillMaxWidth()
@@ -174,22 +172,22 @@ fun CoreScreen(vm: AppViewModel) {
             val cardH = 176.dp
 
             Principles.ALL.forEachIndexed { index, principle ->
-                val st = stateById[principle.id]
-                    ?: PrincipleState(
-                        principle = principle,
-                        currentStreak = 0,
-                        bestStreak = 0,
-                        keptToday = false,
-                        lastDays = List(14) { null }
-                    )
+                val st = stateById[principle.id] ?: PrincipleState(
+                    principle = principle,
+                    currentStreak = 0,
+                    bestStreak = 0,
+                    slippedToday = false,
+                    tracked = false,
+                    lastDays = List(14) { null }
+                )
                 val total = angle + index * step
-                val rad = total * PI / 180f
+                val rad = total * PI / 180.0
                 val x = cx + radiusX * sin(rad).toFloat()
                 val y = cy + radiusY * cos(rad).toFloat()
-                val depth = cos(rad).toFloat() // 1 — спереди (снизу), -1 — сзади (сверху)
+                val depth = cos(rad).toFloat() // 1 — спереди, -1 — сзади
                 val t = (depth + 1f) / 2f
                 val scaleFactor = 0.7f + 0.3f * t
-                val alphaFactor = 0.35f + 0.65f * t
+                val alphaFactor = 0.4f + 0.6f * t
                 val baseColor = Color(principle.colorHex)
 
                 Box(
@@ -207,10 +205,7 @@ fun CoreScreen(vm: AppViewModel) {
                         .clip(RoundedCornerShape(20.dp))
                         .background(
                             Brush.linearGradient(
-                                listOf(
-                                    baseColor,
-                                    baseColor.copy(alpha = 0.55f)
-                                )
+                                listOf(baseColor, baseColor.copy(alpha = 0.55f))
                             )
                         )
                         .clickable(enabled = depth > 0f) { bringToFront(index) }
@@ -237,7 +232,7 @@ fun CoreScreen(vm: AppViewModel) {
                             color = Color.White
                         )
                         Text(
-                            text = "лучший: ${st.bestStreak}",
+                            text = "рекорд ${st.bestStreak}",
                             fontSize = 11.sp,
                             color = Color.White.copy(alpha = 0.85f)
                         )
@@ -267,32 +262,52 @@ fun CoreScreen(vm: AppViewModel) {
                     }
                     FireStreak(streak = frontState.currentStreak)
                 }
-                Spacer(modifier = Modifier.height(12.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Лучший стрик: ${frontState.bestStreak} дн.",
-                        fontSize = 14.sp
-                    )
-                    DaysDots(days = frontState.lastDays)
-                }
-                Spacer(modifier = Modifier.height(12.dp))
-                Button(
-                    onClick = { vm.toggleKept(frontState.principle.id) },
+                Spacer(modifier = Modifier.height(10.dp))
+                Text(
+                    text = if (frontState.currentStreak > 0) {
+                        "${frontState.currentStreak} дн. подряд без срыва"
+                    } else {
+                        "Отсчёт начнётся с завтра"
+                    },
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Рекорд: ${frontState.bestStreak} дн. · последние 14 дней:",
+                    fontSize = 13.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                DaysDots(days = frontState.lastDays)
+                Spacer(modifier = Modifier.height(14.dp))
+                OutlinedButton(
+                    onClick = {
+                        vm.toggleSlip(frontState.principle.id, frontState.slippedToday)
+                    },
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
-                        if (frontState.keptToday) {
-                            "✓ Держу сегодня — отменить"
+                        if (frontState.slippedToday) {
+                            "Отменить срыв сегодня"
                         } else {
-                            "🔥 Держу сегодня"
+                            "Отметить срыв сегодня"
                         }
                     )
                 }
             }
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = "Держишься — ничего отмечать не нужно, огонёк растёт сам.",
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
         }
         Spacer(modifier = Modifier.height(24.dp))
     }

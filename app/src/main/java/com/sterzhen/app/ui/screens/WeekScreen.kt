@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -41,39 +40,37 @@ import androidx.compose.ui.unit.sp
 import com.sterzhen.app.data.DateUtils
 import com.sterzhen.app.data.db.TaskEntity
 import com.sterzhen.app.ui.AppViewModel
+import com.sterzhen.app.ui.RU_LOCALE
 import com.sterzhen.app.ui.dayShortName
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.temporal.TemporalAdjusters
-import java.util.Locale
 
 @Composable
 fun WeekScreen(vm: AppViewModel) {
     val today by vm.today.collectAsState()
     val tasks by vm.tasks.collectAsState()
-    val checks by vm.checks.collectAsState()
+    val slips by vm.slips.collectAsState()
     var newTask by remember { mutableStateOf("") }
+    var selected by remember { mutableStateOf(today) }
 
     val monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
     val days: List<LocalDate> = (0..6).map { monday.plusDays(it.toLong()) }
-
-    var selected by remember { mutableStateOf(today) }
-    if (selected !in days) {
-        selected = today
-    }
+    if (selected !in days) selected = today
 
     val tasksByDate = tasks.groupBy { it.date }
-    val checksByDate = checks.groupBy { it.date }
+    val slipsByDate = slips.groupBy { it.date }
 
     val weekTasks = days.flatMap { tasksByDate[DateUtils.format(it)].orEmpty() }
     val weekDone = weekTasks.count { it.done }
-    val weekKeptMarks = days.sumOf { d ->
-        checksByDate[DateUtils.format(d)]?.count { it.kept } ?: 0
+    val weekSlips = days.sumOf { slipsByDate[DateUtils.format(it)]?.size ?: 0 }
+    val idealDays = days.count {
+        DateUtils.format(it) <= DateUtils.format(today) &&
+            (slipsByDate[DateUtils.format(it)]?.isEmpty() ?: true)
     }
 
     val selectedTasks = tasksByDate[DateUtils.format(selected)].orEmpty()
-    val ruLocale = Locale("ru")
 
     LazyColumn(
         modifier = Modifier
@@ -88,8 +85,8 @@ fun WeekScreen(vm: AppViewModel) {
                 fontWeight = FontWeight.Bold
             )
             Text(
-                text = "${monday.format(DateTimeFormatter.ofPattern("d MMMM", ruLocale))} — " +
-                    "${monday.plusDays(6).format(DateTimeFormatter.ofPattern("d MMMM", ruLocale))}",
+                text = "${monday.format(DateTimeFormatter.ofPattern("d MMMM", RU_LOCALE))} — " +
+                    "${monday.plusDays(6).format(DateTimeFormatter.ofPattern("d MMMM", RU_LOCALE))}",
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
@@ -107,18 +104,9 @@ fun WeekScreen(vm: AppViewModel) {
                         .padding(16.dp),
                     horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
-                    WeekStat(
-                        value = "$weekDone/${weekTasks.size}",
-                        label = "задач выполнено"
-                    )
-                    WeekStat(
-                        value = "$weekKeptMarks",
-                        label = "отметок стержня"
-                    )
-                    WeekStat(
-                        value = "${days.count { d -> (checksByDate[DateUtils.format(d)]?.count { it.kept } ?: 0) == 7 }}/7",
-                        label = "идеальных дней"
-                    )
+                    WeekStat(value = "$weekDone/${weekTasks.size}", label = "задач выполнено")
+                    WeekStat(value = "$weekSlips", label = "срывов")
+                    WeekStat(value = "$idealDays", label = "чистых дней")
                 }
             }
         }
@@ -129,9 +117,9 @@ fun WeekScreen(vm: AppViewModel) {
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 days.forEach { day ->
-                    val dayTasks = tasksByDate[DateUtils.format(day)].orEmpty()
-                    val dayDone = dayTasks.count { it.done }
-                    val dayKept = checksByDate[DateUtils.format(day)]?.count { it.kept } ?: 0
+                    val key = DateUtils.format(day)
+                    val dayDone = tasksByDate[key].orEmpty().count { it.done }
+                    val daySlips = slipsByDate[key]?.size ?: 0
                     val isSelected = day == selected
                     val isToday = day == today
                     Box(
@@ -154,23 +142,27 @@ fun WeekScreen(vm: AppViewModel) {
                                 text = dayShortName(day.dayOfWeek),
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface
+                                color = if (isSelected) Color.White
+                                else MaterialTheme.colorScheme.onSurface
                             )
                             Text(
                                 text = "${day.dayOfMonth}",
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface
+                                color = if (isSelected) Color.White
+                                else MaterialTheme.colorScheme.onSurface
                             )
                             Text(
                                 text = "✓$dayDone",
                                 fontSize = 10.sp,
-                                color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+                                color = if (isSelected) Color.White
+                                else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Text(
-                                text = "🔥$dayKept",
+                                text = if (daySlips == 0) "🔥" else "⚠$daySlips",
                                 fontSize = 10.sp,
-                                color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+                                color = if (isSelected) Color.White
+                                else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
@@ -181,7 +173,7 @@ fun WeekScreen(vm: AppViewModel) {
         item {
             Text(
                 text = selected.format(
-                    DateTimeFormatter.ofPattern("EEEE, d MMMM", ruLocale)
+                    DateTimeFormatter.ofPattern("EEEE, d MMMM", RU_LOCALE)
                 ),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold

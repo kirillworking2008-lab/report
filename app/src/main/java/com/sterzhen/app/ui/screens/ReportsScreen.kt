@@ -25,38 +25,34 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sterzhen.app.data.DateUtils
 import com.sterzhen.app.ui.AppViewModel
-import com.sterzhen.app.ui.dayShortName
 import com.sterzhen.app.ui.PrincipleState
 import com.sterzhen.app.ui.components.DaysDots
 import com.sterzhen.app.ui.components.FireStreak
-import java.time.format.DateTimeFormatter
-import java.util.Locale
+import com.sterzhen.app.ui.dayShortName
 
 @Composable
 fun ReportsScreen(vm: AppViewModel) {
     val today by vm.today.collectAsState()
     val tasks by vm.tasks.collectAsState()
-    val checks by vm.checks.collectAsState()
+    val slips by vm.slips.collectAsState()
     val states by vm.principleStates.collectAsState()
 
     val totalDone = tasks.count { it.done }
-    val totalKept = checks.count { it.kept }
+    val totalSlips = slips.size
     val bestOverall = states.maxOfOrNull { it.bestStreak } ?: 0
+    val currentOverall = states.maxOfOrNull { it.currentStreak } ?: 0
 
-    val ruLocale = Locale("ru")
     val last7 = (6 downTo 0).map { offset ->
         val day = today.minusDays(offset.toLong())
         val done = tasks.count { it.date == DateUtils.format(day) && it.done }
         day to done
     }
-    val maxDone = last7.maxOfOrNull { it.second } ?: 0
 
     LazyColumn(
         modifier = Modifier
@@ -86,8 +82,9 @@ fun ReportsScreen(vm: AppViewModel) {
                     horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
                     ReportStat(value = "$totalDone", label = "задач выполнено")
-                    ReportStat(value = "$totalKept", label = "дней держится")
-                    ReportStat(value = "🔥 $bestOverall", label = "лучший стрик")
+                    ReportStat(value = "🔥 $currentOverall", label = "лучший огонёк")
+                    ReportStat(value = "🏆 $bestOverall", label = "рекорд, дней")
+                    ReportStat(value = "$totalSlips", label = "срывов")
                 }
             }
         }
@@ -108,16 +105,13 @@ fun ReportsScreen(vm: AppViewModel) {
                     horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
                     last7.forEach { (day, done) ->
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Bottom
-                        ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(text = "$done", fontSize = 12.sp)
                             Spacer(modifier = Modifier.height(4.dp))
                             Box(
                                 modifier = Modifier
                                     .width(30.dp)
-                                    .height(((done * 10).coerceAtLeast(4)).dp)
+                                    .height((done * 10).coerceAtLeast(4).dp)
                                     .clip(RoundedCornerShape(6.dp))
                                     .background(
                                         if (day == today) {
@@ -141,13 +135,6 @@ fun ReportsScreen(vm: AppViewModel) {
                         }
                     }
                 }
-            }
-            if (maxDone == 0) {
-                Text(
-                    text = "Пока нет выполненных задач. Начни с сегодняшнего дня 💪",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = 13.sp
-                )
             }
         }
 
@@ -175,12 +162,12 @@ private fun ReportStat(value: String, label: String) {
         Text(
             text = value,
             fontWeight = FontWeight.Bold,
-            fontSize = 20.sp,
+            fontSize = 18.sp,
             textAlign = TextAlign.Center
         )
         Text(
             text = label,
-            fontSize = 12.sp,
+            fontSize = 11.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
         )
@@ -209,7 +196,7 @@ private fun PrincipleReportRow(state: PrincipleState) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Лучший: ${state.bestStreak} дн.",
+                    text = "Рекорд: ${state.bestStreak} дн.",
                     fontSize = 13.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

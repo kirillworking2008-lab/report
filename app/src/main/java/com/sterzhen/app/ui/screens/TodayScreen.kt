@@ -44,21 +44,21 @@ import com.sterzhen.app.data.DateUtils
 import com.sterzhen.app.data.db.TaskEntity
 import com.sterzhen.app.ui.AppViewModel
 import com.sterzhen.app.ui.PrincipleState
+import com.sterzhen.app.ui.RU_LOCALE
 import com.sterzhen.app.ui.components.FireStreak
 import java.time.format.DateTimeFormatter
-import java.util.Locale
 
 @Composable
 fun TodayScreen(vm: AppViewModel) {
     val today by vm.today.collectAsState()
     val tasks by vm.tasks.collectAsState()
     val states by vm.principleStates.collectAsState()
+    val heldCount by vm.heldTodayCount.collectAsState()
     var newTask by remember { mutableStateOf("") }
 
     val todayStr = DateUtils.format(today)
     val todayTasks = tasks.filter { it.date == todayStr }
     val doneCount = todayTasks.count { it.done }
-    val keptCount = states.count { it.keptToday }
 
     LazyColumn(
         modifier = Modifier
@@ -74,7 +74,7 @@ fun TodayScreen(vm: AppViewModel) {
             )
             Text(
                 text = today.format(
-                    DateTimeFormatter.ofPattern("EEEE, d MMMM", Locale("ru"))
+                    DateTimeFormatter.ofPattern("EEEE, d MMMM", RU_LOCALE)
                 ),
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -110,13 +110,13 @@ fun TodayScreen(vm: AppViewModel) {
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "Стержень: $keptCount из ${states.size} принципов",
+                        text = "Стержень: $heldCount из ${states.size} без срыва",
                         fontSize = 14.sp
                     )
                     LinearProgressIndicator(
                         progress = {
                             if (states.isEmpty()) 0f
-                            else keptCount.toFloat() / states.size
+                            else heldCount.toFloat() / states.size
                         },
                         modifier = Modifier
                             .fillMaxWidth()
@@ -129,12 +129,12 @@ fun TodayScreen(vm: AppViewModel) {
 
         item {
             Text(
-                text = "Стержень на сегодня",
+                text = "Стержень",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
             Text(
-                text = "Отметь, что держишься. Огонёк обновится сам.",
+                text = "Дни засчитываются сами. Отмечай только срывы — огонёк обнулится.",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 13.sp
             )
@@ -143,7 +143,7 @@ fun TodayScreen(vm: AppViewModel) {
         items(states, key = { it.principle.id }) { st ->
             PrincipleTodayRow(
                 state = st,
-                onToggle = { vm.toggleKept(st.principle.id) }
+                onToggleSlip = { vm.toggleSlip(st.principle.id, st.slippedToday) }
             )
         }
 
@@ -199,14 +199,15 @@ fun TodayScreen(vm: AppViewModel) {
 }
 
 @Composable
-private fun PrincipleTodayRow(state: PrincipleState, onToggle: () -> Unit) {
+private fun PrincipleTodayRow(state: PrincipleState, onToggleSlip: () -> Unit) {
+    val accent = Color(state.principle.colorHex)
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onToggle),
+            .clickable(onClick = onToggleSlip),
         colors = CardDefaults.cardColors(
-            containerColor = if (state.keptToday) {
-                Color(state.principle.colorHex).copy(alpha = 0.18f)
+            containerColor = if (state.slippedToday) {
+                Color(0xFFEF5350).copy(alpha = 0.16f)
             } else {
                 MaterialTheme.colorScheme.surfaceVariant
             }
@@ -220,7 +221,7 @@ private fun PrincipleTodayRow(state: PrincipleState, onToggle: () -> Unit) {
                 modifier = Modifier
                     .size(44.dp)
                     .clip(CircleShape)
-                    .background(Color(state.principle.colorHex).copy(alpha = 0.25f)),
+                    .background(accent.copy(alpha = 0.25f)),
                 contentAlignment = Alignment.Center
             ) {
                 Text(text = state.principle.emoji, fontSize = 22.sp)
@@ -233,7 +234,11 @@ private fun PrincipleTodayRow(state: PrincipleState, onToggle: () -> Unit) {
                     fontSize = 16.sp
                 )
                 Text(
-                    text = if (state.keptToday) "Держусь сегодня ✓" else "Нажми, если держишься",
+                    text = if (state.slippedToday) {
+                        "Срыв отмечен — нажми, чтобы отменить"
+                    } else {
+                        "Держишься — так держать"
+                    },
                     fontSize = 13.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

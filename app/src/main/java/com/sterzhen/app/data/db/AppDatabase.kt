@@ -23,12 +23,22 @@ data class TaskEntity(
     val createdAt: Long = System.currentTimeMillis()
 )
 
-@Entity(tableName = "principle_checks", primaryKeys = ["principleId", "date"])
-data class PrincipleCheckEntity(
+/**
+ * Срыв — единственное, что нужно отмечать руками.
+ * Все остальные дни считаются «выдержанными» автоматически.
+ */
+@Entity(tableName = "principle_slips", primaryKeys = ["principleId", "date"])
+data class PrincipleSlipEntity(
     val principleId: String,
     /** Дата в формате yyyy-MM-dd */
-    val date: String,
-    val kept: Boolean
+    val date: String
+)
+
+/** С какого дня ведём отсчёт стрика по принципу. */
+@Entity(tableName = "principle_meta")
+data class PrincipleMetaEntity(
+    @PrimaryKey val principleId: String,
+    val startDate: String
 )
 
 @Dao
@@ -50,25 +60,38 @@ interface TaskDao {
 }
 
 @Dao
-interface PrincipleCheckDao {
-    @Query("SELECT * FROM principle_checks")
-    fun allChecks(): Flow<List<PrincipleCheckEntity>>
+interface PrincipleDao {
+    @Query("SELECT * FROM principle_slips")
+    fun slips(): Flow<List<PrincipleSlipEntity>>
+
+    @Query("SELECT * FROM principle_meta")
+    fun meta(): Flow<List<PrincipleMetaEntity>>
+
+    @Query("SELECT * FROM principle_meta")
+    suspend fun metaOnce(): List<PrincipleMetaEntity>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun upsert(check: PrincipleCheckEntity)
+    suspend fun upsertSlip(slip: PrincipleSlipEntity)
 
-    @Query("DELETE FROM principle_checks WHERE principleId = :principleId AND date = :date")
-    suspend fun deleteCheck(principleId: String, date: String)
+    @Query("DELETE FROM principle_slips WHERE principleId = :principleId AND date = :date")
+    suspend fun deleteSlip(principleId: String, date: String)
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertMeta(meta: PrincipleMetaEntity)
 }
 
 @Database(
-    entities = [TaskEntity::class, PrincipleCheckEntity::class],
+    entities = [
+        TaskEntity::class,
+        PrincipleSlipEntity::class,
+        PrincipleMetaEntity::class
+    ],
     version = 1,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun taskDao(): TaskDao
-    abstract fun principleCheckDao(): PrincipleCheckDao
+    abstract fun principleDao(): PrincipleDao
 
     companion object {
         @Volatile

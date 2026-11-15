@@ -1,11 +1,13 @@
 package com.sterzhen.app.data
 
 import com.sterzhen.app.data.db.AppDatabase
-import com.sterzhen.app.data.db.PrincipleCheckEntity
+import com.sterzhen.app.data.db.PrincipleMetaEntity
+import com.sterzhen.app.data.db.PrincipleSlipEntity
 import com.sterzhen.app.data.db.TaskEntity
 import kotlinx.coroutines.flow.Flow
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
 
 class Repository(private val db: AppDatabase) {
 
@@ -14,7 +16,18 @@ class Repository(private val db: AppDatabase) {
 
     fun allTasks(): Flow<List<TaskEntity>> = db.taskDao().allTasks()
 
-    fun allChecks(): Flow<List<PrincipleCheckEntity>> = db.principleCheckDao().allChecks()
+    fun slips(): Flow<List<PrincipleSlipEntity>> = db.principleDao().slips()
+
+    fun meta(): Flow<List<PrincipleMetaEntity>> = db.principleDao().meta()
+
+    /** Первый запуск: каждому принципу ставим точку отсчёта — сегодня. */
+    suspend fun ensureSeeded() {
+        val existing = db.principleDao().metaOnce().map { it.principleId }.toSet()
+        val today = DateUtils.format(LocalDate.now())
+        Principles.ALL
+            .filter { it.id !in existing }
+            .forEach { db.principleDao().insertMeta(PrincipleMetaEntity(it.id, today)) }
+    }
 
     suspend fun addTask(title: String, date: String) {
         db.taskDao().insert(TaskEntity(title = title, date = date))
@@ -24,11 +37,15 @@ class Repository(private val db: AppDatabase) {
 
     suspend fun deleteTask(task: TaskEntity) = db.taskDao().delete(task)
 
-    suspend fun setKept(principleId: String, date: String, kept: Boolean) {
-        if (kept) {
-            db.principleCheckDao().upsert(PrincipleCheckEntity(principleId, date, true))
+    /**
+     * Срыв — событие, которое ломает серию. Всё остальное считается
+     * автоматически, поэтому больше ничего отмечать не нужно.
+     */
+    suspend fun toggleSlip(principleId: String, date: String, exists: Boolean) {
+        if (exists) {
+            db.principleDao().deleteSlip(principleId, date)
         } else {
-            db.principleCheckDao().deleteCheck(principleId, date)
+            db.principleDao().upsertSlip(PrincipleSlipEntity(principleId, date))
         }
     }
 }
@@ -42,36 +59,36 @@ object DateUtils {
 }
 
 /**
- * Текущий стрик: серия подряд идущих дней, когда принцип держался.
- * Если сегодня ещё не отмечено — стрик считается до вчера
- * (день не сгорел, пока не закончился).
+ * Текущий стрик в днях. Считается автоматически: от дня после последнего
+ * срыва (или от старта) до сегодня включительно.
  */
-fun computeStreak(keptDates: Set<String>, today: LocalDate): Int {
-    var streak = 0
-    var day = today
-    if (DateUtils.format(day) !in keptDates) {
-        day = day.minusDays(1)
-    }
-    while (DateUtils.format(day) in keptDates) {
-        streak++
-        day = day.minusDays(1)
-    }
-    return streak
+fun autoStreak(start: LocalDate, slips: Set<LocalDate>, today: LocalDate): Int {
+    if (today < start) return 0
+    val lastSlip = slips.filter { it <= today }.maxOrNull() ?: start.minusDays(1)
+    val from = maxOf(lastSlip.plusDays(1), start)
+    val days = ChronoUnit.DAYS.between(from, today).toInt()
+    return if (days < 0) 0 else days + 1
 }
 
-/** Лучший стрик за всё время. */
-fun computeBestStreak(keptDates: Set<String>): Int {
-    if (keptDates.isEmpty()) return 0
-    val sorted = keptDates.map { DateUtils.parse(it) }.sorted()
-    var best = 1
-    var run = 1
-    for (i in 1 until sorted.size) {
-        if (sorted[i] == sorted[i - 1].plusDays(1)) {
-            run++
-            if (run > best) best = run
-        } else {
-            run = 1
-        }
+/** Лучшая серия за всё время. */
+fun autoBestStreak(start: LocalDate, slips: Set<LocalDate>, today: LocalDate): Int {
+    if (today < start) return 0
+    val relevant = slips.filter { it in start..today }.sorted()
+    var best = 0
+    var cursor = start
+    relevant.forEach { slip ->
+        val len = ChronoUnit.DAYS.between(cursor, slip).toInt()
+        if (len > best) best = len
+        cursor = slip.plusDays(1)
     }
+    val tail = ChronoUnit.DAYS.between(cursor, today).toInt() + 1
+    if (tail > best) best = tail
     return best
+}
+
+/** Состояние дня: true — выдержал, false — срыв, null — ещё не отслеживался. */
+fun dayState(day: LocalDate, start: LocalDate, slips: Set<LocalDate>): Boolean? = when {
+    day < start -> null
+    day in slips -> false
+    else -> true
 }
