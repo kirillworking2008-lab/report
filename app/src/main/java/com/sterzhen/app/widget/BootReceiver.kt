@@ -7,9 +7,14 @@ import android.content.Intent
 /** После перезагрузки телефона будильники теряются — ставим заново. */
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        if (intent.action == Intent.ACTION_BOOT_COMPLETED) {
-            StreakWidget.refresh(context)
-            StreakWidget.scheduleNightlyUpdate(context)
+        when (intent.action) {
+            Intent.ACTION_BOOT_COMPLETED,
+            Intent.ACTION_TIME_CHANGED,
+            Intent.ACTION_TIMEZONE_CHANGED,
+            Intent.ACTION_MY_PACKAGE_REPLACED -> {
+                StreakWidget.refresh(context)
+                StreakWidget.scheduleNightlyUpdate(context)
+            }
         }
     }
 }

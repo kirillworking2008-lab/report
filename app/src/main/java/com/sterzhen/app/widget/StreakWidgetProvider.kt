@@ -4,6 +4,9 @@ import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
 import android.content.Context
 import android.content.Intent
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class StreakWidgetProvider : AppWidgetProvider() {
 
@@ -12,14 +15,14 @@ class StreakWidgetProvider : AppWidgetProvider() {
         appWidgetManager: AppWidgetManager,
         appWidgetIds: IntArray
     ) {
-        StreakWidget.refresh(context)
+        renderAsync(context, goAsync())
         StreakWidget.scheduleNightlyUpdate(context)
     }
 
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
         if (intent.action == StreakWidget.ACTION_REFRESH) {
-            StreakWidget.refresh(context)
+            renderAsync(context, goAsync())
             StreakWidget.scheduleNightlyUpdate(context)
         }
     }
@@ -28,6 +31,17 @@ class StreakWidgetProvider : AppWidgetProvider() {
         super.onEnabled(context)
         StreakWidget.refresh(context)
         StreakWidget.scheduleNightlyUpdate(context)
+    }
+
+    private fun renderAsync(context: Context, pending: PendingResult?) {
+        val appContext = context.applicationContext
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                StreakWidget.render(appContext)
+            } finally {
+                pending?.finish()
+            }
+        }
     }
 
     override fun onDisabled(context: Context) {

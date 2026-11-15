@@ -29,20 +29,21 @@ object StreakWidget {
     const val ACTION_REFRESH = "com.sterzhen.app.WIDGET_REFRESH"
     private const val ALARM_REQUEST_CODE = 4242
 
-    /** Перерисовать все экземпляры виджета. */
+    /** Перерисовать все экземпляры виджета (из приложения). */
     fun refresh(context: Context) {
+        val appContext = context.applicationContext
+        CoroutineScope(Dispatchers.IO).launch { render(appContext) }
+    }
+
+    /** Перерисовать все экземпляры виджета и дождаться результата. */
+    suspend fun render(context: Context) {
         val appContext = context.applicationContext
         val manager = AppWidgetManager.getInstance(appContext)
         val component = ComponentName(appContext, StreakWidgetProvider::class.java)
         val ids = manager.getAppWidgetIds(component)
         if (ids.isEmpty()) return
-
-        CoroutineScope(Dispatchers.IO).launch {
-            val streak = bestStreak(appContext)
-            ids.forEach { id ->
-                manager.updateAppWidget(id, buildViews(appContext, streak))
-            }
-        }
+        val streak = bestStreak(appContext)
+        ids.forEach { id -> manager.updateAppWidget(id, buildViews(appContext, streak)) }
     }
 
     /** Самая длинная текущая серия среди всех принципов. */
