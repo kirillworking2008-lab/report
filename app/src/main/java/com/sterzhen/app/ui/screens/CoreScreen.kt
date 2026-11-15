@@ -188,8 +188,8 @@ fun CoreScreen(vm: AppViewModel) {
                 val y = cy + radiusY * cos(rad).toFloat()
                 val depth = cos(rad).toFloat() // 1 — спереди (снизу), -1 — сзади (сверху)
                 val t = (depth + 1f) / 2f
-                val scale = 0.7f + 0.3f * t
-                val alpha = 0.35f + 0.65f * t
+                val scaleFactor = 0.7f + 0.3f * t
+                val alphaFactor = 0.35f + 0.65f * t
                 val baseColor = Color(principle.colorHex)
 
                 Box(
@@ -200,9 +200,9 @@ fun CoreScreen(vm: AppViewModel) {
                         .graphicsLayer {
                             rotationY = total % 360f
                             cameraDistance = 1000f
-                            scaleX = scale
-                            scaleY = scale
-                            this.alpha = alpha
+                            scaleX = scaleFactor
+                            scaleY = scaleFactor
+                            alpha = alphaFactor
                         }
                         .clip(RoundedCornerShape(20.dp))
                         .background(
