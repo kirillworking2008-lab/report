@@ -127,6 +127,17 @@ jobs:
           echo "== transfer.sh =="
           TS=$(curl -sS -m 300 --upload-file "$APK" "https://transfer.sh/sterzhen.apk" || true)
           echo "TRANSFER=$TS"
+          echo "== envs.sh (живёт ~месяц) =="
+          ENVS=$(curl -sS -m 300 -A "Mozilla/5.0" -F "file=@$APK" https://envs.sh || true)
+          echo "ENVS=$ENVS"
+          echo "== oshi.at (168ч) =="
+          OSHI_RAW=$(curl -sS -m 300 -A "Mozilla/5.0" -F "f=@$APK" "https://oshi.at/?expire=168" || true)
+          echo "OSHI=$(echo "$OSHI_RAW" | head -c 300)"
+          OSHI=$(echo "$OSHI_RAW" | sed -n 's/^DL: \(.*\)$/\1/p' | head -1)
+          echo "== catbox =="
+          CAT=$(curl -sS -m 300 -A "Mozilla/5.0" -F "reqtype=fileupload" \
+            -F "fileToUpload=@$APK" https://catbox.moe/user/api.php || true)
+          echo "CATBOX=$CAT"
           echo "== tmpfiles.org =="
           TF_JSON=$(curl -sS -m 300 -A "Mozilla/5.0" -F "file=@$APK" https://tmpfiles.org/api/v1/upload || true)
           echo "TMPFILES=$(echo "$TF_JSON" | head -c 300)"
@@ -147,7 +158,10 @@ jobs:
             echo "Зеркала APK (сборка ${GITHUB_SHA:0:7}):"
             echo
             if [ -n "$GF" ]; then echo "gofile (свежий): $GF"; else echo "gofile: загрузка не удалась"; fi
-            if [ -n "$TF" ]; then echo "tmpfiles: $TF"; fi
+            if [ -n "$ENVS" ]; then echo "envs.sh (живёт долго): $ENVS"; fi
+            if [ -n "$OSHI" ]; then echo "oshi.at (7 дней): $OSHI"; fi
+            if printf '%s' "$CAT" | grep -q '^https://'; then echo "catbox: $CAT"; fi
+            if [ -n "$TF" ]; then echo "tmpfiles (1 час): $TF"; fi
             if [ -n "$LB" ]; then echo "litterbox: $LB"; fi
             if [ -n "$PD_ID" ]; then echo "pixeldrain: https://pixeldrain.com/api/file/$PD_ID?download"; fi
             echo "filebin: https://filebin.net/$BIN/sterzhen-release.apk"
@@ -157,6 +171,8 @@ jobs:
             echo
             echo "Проверка ссылок:"
             if [ -n "$GF" ]; then echo "gofile  -> $(check "$GF")"; fi
+            if [ -n "$ENVS" ]; then echo "envs.sh -> $(check "$ENVS")"; fi
+            if [ -n "$OSHI" ]; then echo "oshi.at -> $(check "$OSHI")"; fi
             if [ -n "$TF" ]; then echo "tmpfiles -> $(check "$TF")"; fi
             echo "filebin -> $(check "https://filebin.net/$BIN/sterzhen-release.apk")"
           } > /tmp/mirrors.md
