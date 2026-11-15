@@ -45,6 +45,27 @@ jobs:
           gh api "repos/${{ github.repository }}/commits/${{ github.sha }}/comments" \
             -f body="$(cat /tmp/report_trim.md)" || true
 
+      - name: Publish release APK
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          DEBUG_APK=$(ls app/build/outputs/apk/debug/*.apk | head -n 1)
+          RELEASE_APK=$(ls app/build/outputs/apk/release/*.apk | head -n 1)
+          cp "$DEBUG_APK" sterzhen.apk
+          cp "$RELEASE_APK" sterzhen-release.apk
+          NOTES="Сборка из коммита ${GITHUB_SHA:0:7} ($(date -u '+%d.%m.%Y %H:%M UTC'))."
+          if gh release view latest >/dev/null 2>&1; then
+            gh release upload latest sterzhen.apk sterzhen-release.apk --clobber
+            gh release edit latest --notes "$NOTES"
+          else
+            gh release create latest --target "$GITHUB_SHA" \
+              --title "Стержень — последняя сборка" \
+              --notes "$NOTES" \
+              sterzhen.apk sterzhen-release.apk
+          fi
+
       - name: Upload APKs
         uses: actions/upload-artifact@v4
         with:
