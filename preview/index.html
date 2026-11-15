@@ -33,6 +33,14 @@
   .hero p{color:var(--dim);font-size:14px;line-height:1.55;margin:0 0 10px}
   .hero .tag{display:inline-block;font-size:10px;letter-spacing:1.6px;font-weight:700;color:var(--faint);border:1px solid rgba(255,255,255,.1);padding:5px 10px;border-radius:999px;margin-bottom:18px}
   .hero ul{color:var(--dim);font-size:13px;line-height:1.8;padding-left:18px;margin:0}
+  .wrow{display:flex;align-items:center;gap:12px;margin:18px 0}
+  .w1{width:74px;height:74px;border-radius:20px;flex:0 0 auto;
+    background:linear-gradient(180deg,#1D1D2A,#111119);border:1px solid rgba(255,255,255,.2);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+    box-shadow:0 12px 30px rgba(0,0,0,.45)}
+  .w1 .wf{font-size:13px;animation:pulse 1.6s ease-in-out infinite alternate}
+  .w1 .wn{font-size:22px;font-weight:900;letter-spacing:-1px}
+  .wrow .wt{font-size:12px;color:var(--dim);line-height:1.5}
 
   /* ---------- phone ---------- */
   .phone{
@@ -198,11 +206,16 @@
   <div class="tag">ПРЕВЬЮ ДИЗАЙНА · НЕ ПРИЛОЖЕНИЕ</div>
   <h1>Стержень<br><span>новый вид</span></h1>
   <p>Интерактивный макет: переключай экраны внизу, крути 3D-карусель мышью или пальцем.</p>
+  <div class="wrow">
+    <div class="w1"><div class="wf">🔥</div><div class="wn">128</div></div>
+    <div class="wt"><b style="color:#F7F7FA">Виджет 1×1</b><br>огонёк и число дней,<br>обновляется сам в полночь</div>
+  </div>
   <ul>
     <li>стеклянные карточки + aurora-фон</li>
     <li>кольца прогресса и живые огоньки</li>
     <li>цилиндрическая 3D-карусель</li>
     <li>плавающая нижняя навигация</li>
+    <li>виджет 1×1 с автообновлением</li>
   </ul>
 </div>
 

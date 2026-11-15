@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">Стержень</string>
+    <string name="widget_label">Огонёк</string>
+    <string name="widget_description">Лучшая серия без срывов — обновляется сама</string>
 </resources>

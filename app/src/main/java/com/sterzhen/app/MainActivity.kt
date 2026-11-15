@@ -60,6 +60,7 @@ import com.sterzhen.app.ui.screens.TodayScreen
 import com.sterzhen.app.ui.screens.WeekScreen
 import com.sterzhen.app.ui.theme.Ink
 import com.sterzhen.app.ui.theme.SterzhenTheme
+import com.sterzhen.app.widget.StreakWidget
 
 private data class NavItem(val label: String, val icon: ImageVector)
 
@@ -74,9 +75,16 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val repo = Repository(AppDatabase.getInstance(this))
+        StreakWidget.refresh(this)
+        StreakWidget.scheduleNightlyUpdate(this)
         setContent {
             SterzhenTheme {
-                val vm: AppViewModel = viewModel(factory = AppViewModel.factory(repo))
+                val appContext = applicationContext
+                val vm: AppViewModel = viewModel(
+                    factory = AppViewModel.factory(repo) {
+                        StreakWidget.refresh(appContext)
+                    }
+                )
                 var tab by rememberSaveable { mutableStateOf(0) }
 
                 AuroraBackground {

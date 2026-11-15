@@ -70,6 +70,9 @@ interface PrincipleDao {
     @Query("SELECT * FROM principle_meta")
     suspend fun metaOnce(): List<PrincipleMetaEntity>
 
+    @Query("SELECT * FROM principle_slips")
+    suspend fun slipsOnce(): List<PrincipleSlipEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertSlip(slip: PrincipleSlipEntity)
 

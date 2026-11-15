@@ -37,7 +37,10 @@ data class PrincipleState(
     val startDate: LocalDate? = null
 )
 
-class AppViewModel(private val repo: Repository) : ViewModel() {
+class AppViewModel(
+    private val repo: Repository,
+    private val onDataChanged: () -> Unit = {}
+) : ViewModel() {
 
     private val _today = MutableStateFlow(LocalDate.now())
     val today: StateFlow<LocalDate> = _today
@@ -100,35 +103,51 @@ class AppViewModel(private val repo: Repository) : ViewModel() {
     fun addTask(title: String, date: LocalDate) {
         val text = title.trim()
         if (text.isEmpty()) return
-        viewModelScope.launch { repo.addTask(text, DateUtils.format(date)) }
+        viewModelScope.launch {
+            repo.addTask(text, DateUtils.format(date))
+            onDataChanged()
+        }
     }
 
     fun toggleTask(task: TaskEntity) {
-        viewModelScope.launch { repo.setTaskDone(task.id, !task.done) }
+        viewModelScope.launch {
+            repo.setTaskDone(task.id, !task.done)
+            onDataChanged()
+        }
     }
 
     fun deleteTask(task: TaskEntity) {
-        viewModelScope.launch { repo.deleteTask(task) }
+        viewModelScope.launch {
+            repo.deleteTask(task)
+            onDataChanged()
+        }
     }
 
     /** Поменять дату начала отсчёта серии. */
     fun setStartDate(principleId: String, date: LocalDate) {
-        viewModelScope.launch { repo.setStartDate(principleId, DateUtils.format(date)) }
+        viewModelScope.launch {
+            repo.setStartDate(principleId, DateUtils.format(date))
+            onDataChanged()
+        }
     }
 
     /** Отметить/снять срыв на сегодня. Всё остальное считается само. */
     fun toggleSlip(principleId: String, slippedToday: Boolean, date: LocalDate = _today.value) {
         viewModelScope.launch {
             repo.toggleSlip(principleId, DateUtils.format(date), slippedToday)
+            onDataChanged()
         }
     }
 
     companion object {
-        fun factory(repo: Repository): ViewModelProvider.Factory =
+        fun factory(
+            repo: Repository,
+            onDataChanged: () -> Unit = {}
+        ): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                    return AppViewModel(repo) as T
+                    return AppViewModel(repo, onDataChanged) as T
                 }
             }
     }
