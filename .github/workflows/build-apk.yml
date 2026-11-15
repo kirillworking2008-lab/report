@@ -83,6 +83,23 @@ jobs:
           git commit -m "dist: apk ${GITHUB_SHA:0:7} [skip ci]" || exit 0
           git push
 
+      - name: Publish to Supabase Storage
+        if: github.event_name == 'push'
+        continue-on-error: true
+        run: |
+          SB="https://rayrtftzmcfphvlrtpkf.supabase.co"
+          KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJheXJ0ZnR6bWNmcGh2bHJ0cGtmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI5MDUzNzMsImV4cCI6MjEwODQ4MTM3M30.2PnvcwFrmXVh-f1wsu1n9xxn0zqVZZqWuXwaKXY7--A"
+          CODE=$(curl -sS -o /tmp/sb.json -w '%{http_code}' -X POST \
+            "$SB/storage/v1/object/apk/sterzhen.apk" \
+            -H "apikey: $KEY" -H "Authorization: Bearer $KEY" \
+            -H "Content-Type: application/vnd.android.package-archive" \
+            -H "x-upsert: true" \
+            --data-binary @sterzhen-release.apk || true)
+          echo "supabase upload http=$CODE $(head -c 200 /tmp/sb.json)"
+          PUBLIC="$SB/storage/v1/object/public/apk/sterzhen.apk"
+          echo "Supabase link: $PUBLIC"
+          { echo; echo "Supabase (постоянная ссылка): $PUBLIC"; } >> /tmp/extra.md || true
+
       - name: Publish mirrors
         if: github.event_name == 'push'
         env:
